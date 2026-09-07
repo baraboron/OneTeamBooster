@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OneTeam Booster</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#home" aria-label="OneTeam Booster 홈"><img class="corporate-logo" src="assets/wonikips-wordmark.jpg" alt="WONIK IPS"><span class="booster-name"><small>ONE TEAM CULTURE</small><b>OneTeam Booster</b></span></a>
+      <p class="campaign-label">WONIK IPS · 2026 조직문화 캠페인</p>
+      <nav aria-label="주요 메뉴">
+        <button class="nav-link active" data-view="home"><span>⌂</span> 홈</button>
+        <button class="nav-link" data-view="inbox"><span>✦</span> 받은 부스터 <em id="inbox-count">0</em></button>
+        <button class="nav-link" data-view="impact"><span>◌</span> 나의 임팩트</button>
+        <button class="nav-link" data-view="insight"><span>◫</span> 리더 인사이트</button>
+      </nav>
+      <div class="sidebar-foot"><span class="avatar small">김</span><div><b>김원익</b><small>인사팀 교육G</small></div></div>
+    </aside>
+
+    <main>
+      <header><div><p id="eyebrow">ONE TEAM, EVERY DAY</p><h1 id="page-title">좋은 협업은 바로 인정할 때 더 커집니다.</h1></div><button class="primary" id="open-composer">+ 부스터 보내기</button></header>
+
+      <section class="view active" id="home">
+        <div class="hero"><div class="hero-copy"><span class="pill">오늘의 OneTeam</span><h2>함께 만든 순간을<br>동료에게 전해보세요.</h2><p>네 가지 선택만 하면 AI가 업무 맥락에 맞는 따뜻한 메시지를 준비합니다.</p><button class="light-button" id="open-composer-hero">10초 만에 시작하기 <span>→</span></button></div><div class="hero-art"><div class="orbit one"></div><div class="orbit two"></div><div class="hero-heart">✦</div><p>recognition<br><b>connects us</b></p></div></div>
+        <div class="stats" id="stats"></div>
+        <div class="content-grid"><section class="panel"><div class="panel-title"><div><p>RECENT BOOSTERS</p><h3>내게 도착한 인정</h3></div><button class="text-button" data-view-target="inbox">모두 보기</button></div><div id="recent-list" class="booster-list"></div></section><section class="panel side-card"><p>THIS MONTH</p><h3>당신의 OneTeam<br>에너지가 쌓이고 있어요.</h3><div class="ring"><b id="point-total">0</b><span>POINTS</span></div><div class="mini-bars"><span style="height:62%"></span><span style="height:45%"></span><span style="height:78%"></span><span style="height:59%"></span><span style="height:92%"></span><span style="height:70%"></span></div><small>지난달보다 <b>+18%</b> 더 많은 연결</small></section></div>
+      </section>
+
+      <section class="view" id="inbox"><div class="section-heading"><p>INBOX</p><h2>받은 부스터</h2><span>동료가 전한 협업의 순간을 확인하고, 감사의 답장을 보내세요.</span></div><div id="inbox-list" class="inbox-grid"></div></section>
+      <section class="view" id="impact"><div class="section-heading"><p>MY IMPACT</p><h2>나의 OneTeam 임팩트</h2><span>동료들이 기억한 당신의 협업 방식입니다.</span></div><div class="impact-layout"><div class="panel"><h3>가장 빛난 협업 역량</h3><div id="strength-list" class="strength-list"></div></div><div class="panel quote"><span>“</span><p id="impact-quote">동료의 강점을 발견하고, 함께 더 나은 결과를 만들어요.</p><small>OneTeam Booster가 모은 당신의 이야기</small></div></div></section>
+      <section class="view" id="insight"><div class="section-heading"><p>LEADER INSIGHT · DEMO</p><h2>협업의 온도</h2><span>개인 감시가 아닌, 조직의 연결과 변화 가능성을 보는 참고 화면입니다.</span></div><div class="insight-grid"><div class="panel network-panel"><div class="network-head"><div><h3>조직 간 협업 연결</h3><small>이번 달 부서 간 부스터 교류</small></div><span class="network-total">26 <small>건</small></span></div><div class="network" aria-label="부서 간 협업 연결 지도"><svg viewBox="0 0 540 290" role="img" aria-label="연구, 생산, 영업, 인사 부서의 협업 연결"><defs><filter id="soft"><feGaussianBlur stdDeviation="3"/></filter><linearGradient id="link-strong" x1="0" x2="1"><stop stop-color="#6e9ce4"/><stop offset="1" stop-color="#2c539f"/></linearGradient></defs><path class="link glow" d="M117 159 Q225 79 302 112"/><path class="link strong" d="M117 159 Q225 79 302 112"/><path class="link medium" d="M302 112 Q397 112 443 170"/><path class="link medium" d="M117 159 Q206 229 284 223"/><path class="link light" d="M302 112 Q315 181 284 223"/><path class="link light" d="M443 170 Q373 227 284 223"/><g class="link-label"><rect x="196" y="93" width="49" height="23" rx="11.5"/><text x="220.5" y="109">9건</text></g><g class="link-label muted"><rect x="374" y="119" width="49" height="23" rx="11.5"/><text x="398.5" y="135">6건</text></g><g class="link-label muted"><rect x="185" y="207" width="49" height="23" rx="11.5"/><text x="209.5" y="223">5건</text></g><g class="dept research"><circle cx="91" cy="166" r="37"/><text x="91" y="171">연구</text></g><g class="dept production"><circle cx="302" cy="80" r="37"/><text x="302" y="85">생산</text></g><g class="dept sales"><circle cx="468" cy="179" r="37"/><text x="468" y="184">영업</text></g><g class="dept hr"><circle cx="284" cy="251" r="37"/><text x="284" y="256">인사</text></g></svg></div><div class="network-legend"><span><i class="legend-line strong"></i>활발한 교류</span><span><i class="legend-line"></i>일반 교류</span><span>선 굵기 = 부스터 교류 빈도</span></div></div><div class="panel"><h3>이번 달의 변화</h3><div class="change"><b>+24%</b><p>부서 간 부스터 교류</p><hr><b>68%</b><p>24시간 내 감사 답장</p><hr><b>문서 작성</b><p>가장 많이 기록된 협업 업무</p></div></div></div></section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modal"><section class="composer" role="dialog" aria-modal="true" aria-labelledby="composer-title"><button class="close" id="close-composer" aria-label="닫기">×</button><p>ONE TEAM BOOSTER</p><h2 id="composer-title">동료의 빛나는 순간을<br>부스터로 전해보세요.</h2><div class="steps"><span class="current">1</span><i></i><span>2</span><i></i><span>3</span></div><form id="booster-form"><label>누구에게 보내나요?<input required id="recipient" placeholder="이름 또는 팀을 입력하세요"></label><div class="field"><label>어떤 관계인가요?</label><div class="choice-group" data-name="partner"><button type="button" class="selected">동료</button><button type="button">상사 / 선배</button><button type="button">후배 / 신입</button><button type="button">프로젝트 팀</button></div></div><div class="field"><label>함께한 업무는 무엇인가요?</label><div class="choice-group wrap" data-name="mission"><button type="button" class="selected">문서 작성</button><button type="button">고객 대응</button><button type="button">성능 개선</button><button type="button">프로세스 개선</button><button type="button">안전환경 점검</button></div></div><div class="field two-cols"><div><label>빛난 협업 역량</label><select id="boost"><option>적극적 경청</option><option>피드백 수용</option><option>책임감(R&R)</option><option>유연성</option><option>공동 목표 의식</option><option>정보 공유</option><option>동료 지지</option></select></div><div><label>만든 변화</label><select id="impact-select"><option>일정 단축</option><option>품질 향상</option><option>리스크 방지</option><option>비용 절감</option><option>팀워크 강화</option><option>시야 확장</option><option>동기 부여</option></select></div></div><button class="primary full" type="submit">AI 메시지 만들기 <span>✦</span></button></form><div class="message-preview hidden" id="message-preview"><p>AI가 만든 부스터 초안</p><textarea id="message-text"></textarea><div><button class="secondary" id="back-to-form">수정하기</button><button class="primary" id="send-booster">부스터 전송 <span>→</span></button></div></div></section></div>
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
