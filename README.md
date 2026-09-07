@@ -25,4 +25,4 @@ node -e "require('http').createServer((q,s)=>require('fs').createReadStream(q.ur
 - `AGENTS.md`: 제품 정의, MVP 범위, UX 및 구현 원칙
 - `PRODUCT_PLAN.md`: 문제 정의, 정보 구조, 릴리스 순서, 성공 지표
 - `WONIKIPS_CI(JPG)/`: 제공받은 원익IPS CI 원본
-- `assets/wonikips-wordmark.jpg`: 화면에 사용하는 워드마크 자산
+- `assets/wonikips-ci-full.jpg`: 화면에 사용하는 무절단 원익IPS 워드마크 자산
