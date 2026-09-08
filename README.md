@@ -23,6 +23,10 @@ node -e "require('http').createServer((q,s)=>require('fs').createReadStream(q.ur
 ## 문서
 
 - `AGENTS.md`: 제품 정의, MVP 범위, UX 및 구현 원칙
+- `DESIGN_GUIDELINES.md`: 조사 근거, 디자인 토큰, 화면별 규칙, 접근성 및 지속 적용 기준
+- `FEATURE_AUDIT.md`: 현재 시제품의 기능 상태와 운영 전 후속 과제
+- `MOTIVATION_COPY.md`: 개인 칭찬 상태별 응원 문구 98개 조각 / 672가지 조합
+- `LEADERBOARD_API.md`: 전사 TOP 10 서버 응답·자동 갱신·시연 구분 계약
 - `PRODUCT_PLAN.md`: 문제 정의, 정보 구조, 릴리스 순서, 성공 지표
 - `WONIKIPS_CI(JPG)/`: 제공받은 원익IPS CI 원본
 - `assets/wonikips-ci-full.jpg`: 화면에 사용하는 무절단 원익IPS 워드마크 자산
