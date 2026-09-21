@@ -51,7 +51,12 @@ test('integrated test-user UI searches employees, submits to server and switches
  const tick=()=>new Promise(resolve=>setImmediate(resolve));await tick();
  assert.equal(h.node('#test-user-panel').hidden,false);assert.equal(h.node('#point-total').textContent,0);
  await h.node('#test-user').listeners.change({target:{value:'a'}});
- h.node('#open-composer').click();h.node('#employee-query').value='가상';h.node('#employee-query').listeners.keydown({key:'Enter',preventDefault(){}});await tick();
+ h.node('#open-composer').click();
+ assert.equal(h.node('#recipient-name-field').hidden,true,'Hide the display-only recipient field during employee search');
+ assert.equal(h.node('#employee-query-field').hidden,false,'The recipient label must expose the editable search field');
+ assert.equal(Boolean(h.node('#employee-query').readOnly),false);
+ assert.equal(h.node('#recipient-source-field').hidden,true,'Test users do not need a disabled source switch');
+ h.node('#employee-query').value='가상';h.node('#employee-query').listeners.keydown({key:'Enter',preventDefault(){}});await tick();
  h.node('#employee-results').children[0].children[0].click();assert.equal(h.node('#recipient').value,'가상 B');
  const selected={partner:['동료'],mission:['문서 작성'],boost:['정보 공유','동료 지지'],impact:['품질 향상']};
  h.context.document.querySelectorAll=selector=>{const key=selector.match(/data-name="(\w+)"/);return key?(selected[key[1]]||[]).map((value,i)=>({dataset:{value,rank:String(i+1)}})):[];};
@@ -99,4 +104,6 @@ test('ordered selections survive save, reuse and summaries; employee drafts neve
  const counts=vm.runInContext('countBy(data.sentBoosters,"boost")',context);assert.equal(counts['유연성'],1);
  const before=storage.get('otb-prototype-v2');node('#message-preview').dataset.values=JSON.stringify({...values,directoryDraft:true});node('#send-booster').click();assert.equal(storage.get('otb-prototype-v2'),before);
  node('#open-employee-search').click();assert.equal(node('#recipient-source').value,'directory');assert.equal(node('#employee-directory').hidden,false);
+ node('#recipient-source').listeners.change({target:{value:'demo'}});
+ assert.equal(node('#recipient-name-field').hidden,false);assert.equal(node('#employee-query-field').hidden,true);assert.equal(node('#recipient').readOnly,false);
 });

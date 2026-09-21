@@ -143,11 +143,11 @@
 <h2 id="composer-title">어떤 점이 고마웠나요?</h2>
 <form id="booster-form">
 <label class="project-name-field" for="project-name">프로젝트 또는 업무명<input required id="project-name" maxlength="100" placeholder="예: 고객사 A 장비 셋업, 3분기 품질 개선"></label>
-<label class="recipient-name-field" for="recipient">누구에게 보내나요?<input required id="recipient" placeholder="이름을 입력하세요"></label>
-<label class="recipient-source-field" for="recipient-source">받는 사람 선택 방식<select id="recipient-source"><option value="demo">시연 이름 직접 입력</option><option value="directory">사내 임직원 검색 · 초안 작성</option></select></label>
+<label id="recipient-name-field" class="recipient-name-field" for="recipient">누구에게 보내나요?<input required id="recipient" placeholder="이름을 입력하세요"></label>
+<label id="employee-query-field" class="recipient-name-field" for="employee-query" hidden>누구에게 보내나요?<input id="employee-query" type="search" maxlength="50" autocomplete="off" placeholder="이름을 입력해 검색하세요" aria-describedby="employee-status employee-selected" aria-controls="employee-results"></label>
+<label id="recipient-source-field" class="recipient-source-field" for="recipient-source">받는 사람 선택 방식<select id="recipient-source"><option value="demo">시연 이름 직접 입력</option><option value="directory">사내 임직원 검색 · 초안 작성</option></select></label>
 <section id="employee-directory" class="employee-directory" hidden aria-label="사내 임직원 검색">
 <p class="form-guide" id="employee-directory-note">실제 인사정보를 검색합니다. 로그인 연결 전에는 초안만 작성하며, 전송하거나 브라우저에 저장하지 않습니다.</p>
-<label for="employee-query">임직원 검색<input id="employee-query" type="search" maxlength="50" autocomplete="off" placeholder="이름·부서·이메일·직책" aria-describedby="employee-status"></label>
 <label for="employee-department">부서로 좁히기<select id="employee-department"><option value="">전체 부서</option></select></label>
 <p id="employee-status" role="status" aria-live="polite"></p>
 <ul id="employee-results" class="employee-results" aria-label="검색 결과"></ul>

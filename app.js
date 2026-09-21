@@ -76,6 +76,7 @@ function renderTestSession(state){
  $('#test-user').innerHTML='<option value="">사용자를 선택하세요</option>'+state.users.map(user=>'<option value="'+escapeHtml(user.USER_ID)+'">'+escapeHtml(user.USER_NM)+' · '+escapeHtml(user.DEPT_NM)+'</option>').join('');
  $('#test-user').value=state.employee?.USER_ID||'';
  $('#test-mode-notice').hidden=!state.enabled;
+ $('#recipient-source-field').hidden=state.enabled;
  if(state.enabled){
    $('#demo-role').hidden=true;$('#demo-role-label').hidden=true;$('#local-demo-actions').hidden=true;
    LeaderWorkspace.testMode=true;$('[data-view="insight"]').hidden=true;
@@ -96,6 +97,7 @@ function setRecipientSource(source){
  if(remoteWorkspace?.getState().enabled)source='directory';
  $('#recipient-source').value=source;const actual=source==='directory';
  $('#employee-directory').hidden=!actual;$('#recipient').readOnly=actual;$('#recipient').required=!actual;
+ $('#recipient-name-field').hidden=actual;$('#employee-query-field').hidden=!actual;
  employeePicker?.reset();$('#recipient').value='';
  if(actual)employeePicker?.open();
 }
