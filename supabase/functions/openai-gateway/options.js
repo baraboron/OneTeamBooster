@@ -1,5 +1,6 @@
 // Mirrors backend OPTIONS; verified by gateway tests.
 export const OPTIONS = Object.freeze({
+  "recipientScope": ["같은팀", "타팀"],
   "partner": [
     "동료",
     "상사 / 선배",

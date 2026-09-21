@@ -8,6 +8,9 @@ import {once} from 'node:events';
 test('all ordered selections are validated and preserved; client identity/points are discarded',()=>{
   const input={recipientId:'test-b',projectName:'검증 업무',partner:'동료',missions:OPTIONS.missions.slice(0,3),boosts:OPTIONS.boosts.slice(0,3),impacts:OPTIONS.impacts.slice(0,3),message:'검증 칭찬',points:999,senderId:'forged'};
   const value=validateBooster(input);
+  assert.equal(value.recipientScope,undefined);
+  for(const recipientScope of OPTIONS.recipientScope)assert.equal(validateBooster({...input,recipientScope}).recipientScope,recipientScope);
+  assert.throws(()=>validateBooster({...input,recipientScope:'private-department'}),{code:'INVALID_RECIPIENT_SCOPE'});
   assert.deepEqual(value.boosts,input.boosts);assert.deepEqual(value.impacts,input.impacts);
   assert.equal(value.points,undefined);assert.equal(value.senderId,undefined);
   for(const broken of [{...input,boosts:['not-allowed']},{...input,missions:['문서 작성','문서 작성']},{...input,message:' '},{...input,impacts:[]}])assert.throws(()=>validateBooster(broken));

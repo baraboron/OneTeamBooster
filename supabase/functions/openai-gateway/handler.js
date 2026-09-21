@@ -29,6 +29,10 @@ function validate(value) {
   if (typeof value.projectName !== 'string' || !value.projectName.trim() || value.projectName.trim().length > 100) throw new GatewayError(400, 'INVALID_INPUT');
   const clean = { projectName: value.projectName.trim(), partner: value.partner };
   if (!OPTIONS.partner.includes(clean.partner)) throw new GatewayError(400, 'INVALID_PARTNER');
+  if (value.recipientScope !== undefined && value.recipientScope !== null) {
+    if (!OPTIONS.recipientScope.includes(value.recipientScope)) throw new GatewayError(400, 'INVALID_RECIPIENT_SCOPE');
+    clean.recipientScope = value.recipientScope;
+  }
   for (const field of ['missions', 'boosts', 'impacts']) {
     const list = value[field];
     if (!Array.isArray(list) || list.length < 1 || list.length > 3 || new Set(list).size !== list.length || list.some(item => !OPTIONS[field].includes(item))) throw new GatewayError(400, 'INVALID_SELECTION');

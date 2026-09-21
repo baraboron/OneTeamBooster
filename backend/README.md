@@ -1,5 +1,11 @@
 # 인사 연동 및 업무 API
 
+## 2026-09-21 소속 구분 및 어투 · 로컬 반영
+
+- `recipientScope`는 `같은팀` 또는 `타팀`이며 화면에는 같은 팀/그룹·타 팀/그룹으로 표시한다. 사용자가 선택하는 분류이며 인사정보에서 추정하지 않는다.
+- `/api/drafts`와 `/api/boosters`가 선택값을 검증하고, `boosters.recipient_scope`에 저장해 수신함·발신함·재사용에 전달한다. DB 컬럼은 nullable로 추가하며 기존 기록·요청의 중복 방지 해시는 유지한다. 기존 클라이언트의 미입력은 허용하지만 새 작성 UI에서는 선택이 필수다.
+- 프롬프트 `praise-ko-v2`는 관계 3종 × 소속 2종의 어투·친밀도를 반영한다. 게이트웨이와 앱의 버전을 함께 배포해야 하며, 이번 변경은 아직 배포하지 않았다.
+
 ## 2026-09-21 AI 게이트웨이 연결
 
 인증된 테스트 사용자의 `POST /api/drafts`를 Supabase `openai-gateway`로 전달한다. `OPENAI_GATEWAY_URL`과 `OTB_GATEWAY_TOKEN`으로 호출하며 OpenAI API 키는 사내 서버에 두지 않는다. 요청은 업무명·관계·선택값만 전달하고 성공 시 `{message,source,model,promptVersion}`을 반환한다. 초안 생성은 원장에 쓰지 않는다. 실제 모델 생성·브라우저 수정 화면·기록 불변까지 배포 검증했다. 상세 설정은 `deploy/OPENAI_GATEWAY.md` 참고. 아래의 AI 미연결·템플릿 관련 설명은 게이트웨이 배포 이전 이력이다.
@@ -57,6 +63,7 @@
   "recipientId": "example-user",
   "projectName": "가상 검증 업무",
   "partner": "동료",
+  "recipientScope": "타팀",
   "missions": ["문서 작성", "평가 및 분석"],
   "boosts": ["정보 공유", "동료 지지"],
   "impacts": ["품질 향상", "팀워크 강화"],

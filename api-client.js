@@ -17,7 +17,7 @@
     testUsers(){return this.request('/test-users');}
     leaderboard(){return this.request('/leaderboard');}
     workspace(){return this.request('/workspace');}
-    draft(values,{signal}={}){const {projectName,partner,missions,boosts,impacts}=values;return this.request('/drafts',{method:'POST',body:{projectName,partner,missions,boosts,impacts},signal});}
+    draft(values,{signal}={}){const {projectName,partner,recipientScope,missions,boosts,impacts}=values;return this.request('/drafts',{method:'POST',body:{projectName,partner,recipientScope,missions,boosts,impacts},signal});}
     send(values,requestId,csrfToken){return this.request('/boosters',{method:'POST',body:values,requestId,csrfToken});}
     reply(id,message,csrfToken){return this.request('/boosters/'+encodeURIComponent(id)+'/reply',{method:'POST',body:{message},csrfToken});}
     leader(memberId='',direction='received'){return this.request('/leader/records?memberId='+encodeURIComponent(memberId)+'&direction='+encodeURIComponent(direction));}

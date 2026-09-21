@@ -21,7 +21,14 @@
   function draft(values){
     const action=actions[values.boost]||'함께 도와주신',outcome=outcomes[values.impact]||'업무에 도움이 됐습니다';
     const context=values.projectName?values.projectName+'에서 ':'';
-    return values.recipient+'님, '+context+values.mission+' 업무에서 '+action+' 덕분에 '+outcome+'. 고맙습니다!';
+    const same=values.recipientScope==='같은팀',other=values.recipientScope==='타팀';
+    const senior=values.partner==='상사 / 선배',junior=values.partner==='후배 / 신입';
+    const endings=same
+      ?senior?'함께 업무를 챙겨 주셔서 감사드립니다.':junior?'함께해 주신 도움이 힘이 됐어요. 고마워요.':'같은 팀으로 함께해 주셔서 고마워요.'
+      :other?senior?'부서 간 협업에 도움을 주신 점에 감사드립니다.':junior?'다른 팀과 함께하는 일에 힘을 보태 주셔서 감사합니다.':'다른 팀에서도 협업에 도움을 주셔서 감사합니다.'
+      :senior?'감사드립니다.':junior?'함께해 주셔서 고마워요.':'고맙습니다!';
+    const effect=same&&!senior?outcome.replace('있었습니다','있었어요'):outcome;
+    return values.recipient+'님, '+context+values.mission+' 업무에서 '+action+' 덕분에 '+effect+'. '+endings;
   }
   const api={draft,actions,outcomes};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.PraiseCopy=api;

@@ -13,6 +13,8 @@ test('PostgreSQL transactions, concurrency, persistence, HR sync and group scope
   const connectionString=process.env.TEST_DATABASE_URL;
   assert.equal(new URL(connectionString).pathname,'/otb_test','Only the disposable test database is allowed');
   const pool=createPool(connectionString);t.after(()=>pool.end());await migrate(pool);
+  await pool.query('ALTER TABLE boosters DROP COLUMN recipient_scope');
+  await migrate(pool);await migrate(pool);
   const rows=Array.from({length:8},(_,i)=>({USER_ID:`test-${i}`,USER_NM:`가상 구성원 ${i}`,USER_EMAIL:`person${i}@example.invalid`,DEPT_CD:i<4?'test-dept-a':'test-dept-b',DEPT_NM:i<4?'가상 부서 A':'가상 부서 B',ROLE_CD:'',ROLE_NM:''}));
   await syncDirectory(pool,{all:async()=>rows});
   assert.equal((await searchEmployees(pool,new URLSearchParams({q:'가상'}))).total,8);
@@ -26,6 +28,9 @@ test('PostgreSQL transactions, concurrency, persistence, HR sync and group scope
   const requestId=randomUUID();
   const [first,retry]=await Promise.all([sendBooster(pool,'test-0',input('test-1'),requestId,campaign),sendBooster(pool,'test-0',input('test-1'),requestId,campaign)]);
   assert.equal(first.id,retry.id);
+  await migrate(pool);
+  assert.equal((await workspace(pool,'test-1',campaign)).received[0].recipientScope,null,'Legacy records must not infer scope');
+  assert.equal((await sendBooster(pool,'test-0',input('test-1'),requestId,campaign)).replayed,true);
   assert.equal((await workspace(pool,'test-0',campaign)).points,10);
   assert.equal((await workspace(pool,'test-1',campaign)).points,20);
   await assert.rejects(sendBooster(pool,'test-0',{...input('test-1'),message:'different'},requestId,campaign),{code:'IDEMPOTENCY_CONFLICT'});
@@ -78,11 +83,13 @@ test('test-user HTTP workflow is isolated from public ledger and restricts actor
   assert.equal((await request('/api/boosters','preview-a',{method:'POST',headers:{Origin:'http://untrusted.invalid'},body:'{}'})).status,403);
   assert.equal((await request('/api/boosters','preview-a',{method:'POST',headers:{Origin:''},body:'{}'})).status,403);
   const search=await (await request('/api/employees?q='+encodeURIComponent('김영훈'),'preview-a')).json();assert.equal(search.data[0].USER_ID,'preview-b');
-  const body={recipientId:'preview-b',projectName:'가상 검증',partner:'동료',missions:['문서 작성'],boosts:['정보 공유','동료 지지'],impacts:['품질 향상'],message:'가상 테스트 메시지'};
+  const body={recipientId:'preview-b',projectName:'가상 검증',partner:'동료',recipientScope:'타팀',missions:['문서 작성'],boosts:['정보 공유','동료 지지'],impacts:['품질 향상'],message:'가상 테스트 메시지'};
   const options={method:'POST',headers:{'Idempotency-Key':randomUUID()},body:JSON.stringify(body)};
   const first=await request('/api/boosters','preview-a',options);assert.equal(first.status,201);const sent=await first.json();
   const again=await (await request('/api/boosters','preview-a',options)).json();assert.equal(sent.id,again.id);
   const state=async id=>(await request('/api/workspace',id)).json();
+  assert.equal((await state('preview-a')).sentBoosters[0].recipientScope,'타팀');assert.equal((await state('preview-b')).received[0].recipientScope,'타팀');
+  const changed=await request('/api/boosters','preview-a',{...options,body:JSON.stringify({...body,recipientScope:'같은팀'})});assert.equal(changed.status,409);
   assert.equal((await state('preview-a')).points,10);assert.equal((await state('preview-b')).points,20);
   const reply={method:'POST',body:JSON.stringify({message:'가상 답장'})};
   assert.equal((await request('/api/boosters/'+sent.id+'/reply','preview-a',reply)).status,404);

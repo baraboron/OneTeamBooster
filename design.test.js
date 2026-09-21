@@ -83,8 +83,9 @@ test('design governance and truthful prototype labels remain linked',()=>{
  assert.match(agents,/DESIGN_GUIDELINES\.md/);
  assert.match(agents,/design\.test\.js/);
  assert.match(html,/템플릿 기반 시연/);
- assert.match(html,/전사 포인트 TOP 10/);
- assert.match(html,/연결 대기/);
+ assert.match(html,/협업 분석/);
+ assert.match(html,/상세 분석 보기/);
+ assert.doesNotMatch(html,/전사 포인트 TOP 10|leaderboard-/);
  assert.doesNotMatch(app,/(?<!\$)\$\('[^']+'\)\.forEach/);
- assert.match(html,/하루 최대 3회 발송 · 동일인에게는 월요일 기준 주 1회/);
+ assert.match(html,/• 발송 한도: 1일 최대 3회 \/ 동일인 기준 주 1회<br>※ 동일인 발송 한도는 매주 월요일에 초기화됩니다\./);
 });

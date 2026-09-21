@@ -23,3 +23,17 @@ test('home copy is synced with its reference and avoids rejected abstractions',(
  const app=fs.readFileSync(path.join(__dirname,'app.js'),'utf8');
  assert.doesNotMatch(app,/동료가 기억한 협업의 순간/);
 });
+
+test('local preview varies six tones without casual speech or invented familiarity',()=>{
+ const drafts=new Set();
+ for(const partner of ['동료','상사 / 선배','후배 / 신입'])for(const recipientScope of ['같은팀','타팀']){
+   const message=copy.draft({recipient:'가상 동료',projectName:'가상 문서 검토',mission:'문서 작성',boost:'정보 공유',impact:'품질 향상',partner,recipientScope});
+   drafts.add(message);
+   assert.match(message,/정보를 제때 공유/);assert.match(message,/완성도/);
+   assert.doesNotMatch(message,/늘 함께|누구보다 가까운|잘했|성장했|수고했어|undefined/);
+   if(partner==='상사 / 선배')assert.match(message,/감사드립니다\.$/);
+   else if(recipientScope==='같은팀')assert.match(message,/고마워요\.$/);
+   else assert.match(message,/감사합니다\.$/);
+ }
+ assert.equal(drafts.size,6);
+});

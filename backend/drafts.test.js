@@ -4,13 +4,13 @@ import {once} from 'node:events';
 import {createDraftGenerator,validateDraft} from './drafts.js';
 import {createApplication} from './application.js';
 import {createServer} from './server.js';
-const input=()=>({projectName:'가상 문서 검토',partner:'동료',missions:['문서 작성'],boosts:['정보 공유','동료 지지'],impacts:['품질 향상']});
+const input=()=>({projectName:'가상 문서 검토',partner:'동료',recipientScope:'타팀',missions:['문서 작성'],boosts:['정보 공유','동료 지지'],impacts:['품질 향상']});
 const completed=message=>({ok:true,json:async()=>({status:'completed',output:[{type:'reasoning'},{type:'message',content:[{type:'output_text',text:JSON.stringify({message})}]}]})});
 const result=()=>completed('문서 검토에 필요한 정보를 공유해 주셔서 감사합니다. 함께 자료를 다듬는 데 도움이 되었어요.');
 
 test('gateway transport forwards validated context only and never leaks OpenAI credentials or identity',async()=>{
  const gatewayUrl='https://uadmxxpoxaukuwwvfdpr.supabase.co/functions/v1/openai-gateway',gatewayToken='synthetic-gateway-token-at-least-32-characters';let observed;
- const generator=createDraftGenerator({apiKey:'private-openai-key',gatewayUrl,gatewayToken,fetchFn:async(url,options)=>{observed={url,...options};return{ok:true,json:async()=>({message:'문서 검토에 도움을 주셔서 감사합니다.',source:'openai',model:'gpt-5.6-luna',promptVersion:'praise-ko-v1'})};}});
+ const generator=createDraftGenerator({apiKey:'private-openai-key',gatewayUrl,gatewayToken,fetchFn:async(url,options)=>{observed={url,...options};return{ok:true,json:async()=>({message:'문서 검토에 도움을 주셔서 감사합니다.',source:'openai',model:'gpt-5.6-luna',promptVersion:'praise-ko-v2'})};}});
  assert.equal(generator.enabled,true);assert.equal((await generator.generate('private-actor',{...input(),USER_EMAIL:'private-email'})).source,'openai');
  assert.equal(observed.url,gatewayUrl);assert.equal(observed.headers.Authorization,'Bearer '+gatewayToken);assert.deepEqual(JSON.parse(observed.body),input());
  assert.doesNotMatch(JSON.stringify(observed),/private-openai-key|private-actor|private-email/);
@@ -30,7 +30,7 @@ test('OpenAI receives only validated task context, with strict output and no sto
 
 test('invalid selections and absent credentials fail without spending an API call',async()=>{
  let calls=0;const generator=createDraftGenerator({apiKey:'synthetic-key',fetchFn:async()=>{calls++;return result();}});
- for(const body of [{...input(),projectName:''},{...input(),partner:'admin'},{...input(),boosts:['정보 공유','정보 공유']},{...input(),impacts:['invented']}])await assert.rejects(generator.generate('a',body),{status:400});
+ for(const body of [{...input(),projectName:''},{...input(),partner:'admin'},{...input(),recipientScope:'private-department'},{...input(),boosts:['정보 공유','정보 공유']},{...input(),impacts:['invented']}])await assert.rejects(generator.generate('a',body),{status:400});
  assert.equal(calls,0);await assert.rejects(createDraftGenerator().generate('a',input()),{code:'AI_NOT_CONFIGURED'});
  assert.equal(validateDraft({...input(),extra:'discard'}).extra,undefined);
 });

@@ -6,6 +6,7 @@ export class AppError extends Error {
 }
 export const OPTIONS = Object.freeze({
   partner: ['동료','상사 / 선배','후배 / 신입','프로젝트 참여원 / 팀 전체'],
+  recipientScope: ['같은팀','타팀'],
   missions: ['고객 대응','성능 개선','설비 셋업','문서 작성','평가 및 분석','프로세스 개선','안전환경 점검'],
   boosts: ['적극적 경청','피드백 수용','책임감(R&R)','유연성','공동 목표 의식','정보 공유','동료 지지'],
   impacts: ['일정 단축','품질 향상','리스크 방지','비용 절감','팀워크 강화','시야 확장','동기 부여']
@@ -18,6 +19,11 @@ export function uuid(value) {
   if (typeof value !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) throw new AppError(400,'INVALID_REQUEST_ID');
   return value;
 }
+export function validateRecipientScope(value) {
+  if (value === undefined || value === null) return undefined;
+  if (!OPTIONS.recipientScope.includes(value)) throw new AppError(400,'INVALID_RECIPIENT_SCOPE','같은 팀/그룹 또는 타 팀/그룹을 선택해 주세요.');
+  return value;
+}
 export function validateBooster(input) {
   const result = { recipientId: text(input.recipientId,100,'수신자'), projectName: text(input.projectName,100,'업무명'), partner: input.partner };
   if (!OPTIONS.partner.includes(result.partner)) throw new AppError(400,'INVALID_PARTNER');
@@ -27,6 +33,8 @@ export function validateBooster(input) {
     result[field] = values;
   }
   result.message = text(input.message,2000,'칭찬 내용');
+  const recipientScope = validateRecipientScope(input.recipientScope);
+  if (recipientScope !== undefined) result.recipientScope = recipientScope;
   return result;
 }
 
@@ -51,8 +59,8 @@ export async function sendBooster(pool, actorId, input, requestId, campaign) {
     if (limits.daily >= 3) throw new AppError(409,'DAILY_LIMIT','오늘은 부스터를 3회 모두 보냈어요.');
     if (limits.weekly) throw new AppError(409,'WEEKLY_LIMIT','같은 동료에게는 월요일 기준 주 1회만 보낼 수 있습니다.');
     const id = randomUUID();
-    await db.query(`INSERT INTO boosters(id,campaign,sender_id,recipient_id,project_name,partner,missions,boosts,impacts,message,request_id,request_hash)
-      VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9::jsonb,$10,$11,$12)`, [id,campaign,actorId,value.recipientId,value.projectName,value.partner,JSON.stringify(value.missions),JSON.stringify(value.boosts),JSON.stringify(value.impacts),value.message,requestId,hash]);
+    await db.query(`INSERT INTO boosters(id,campaign,sender_id,recipient_id,project_name,partner,missions,boosts,impacts,message,request_id,request_hash,recipient_scope)
+      VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9::jsonb,$10,$11,$12,$13)`, [id,campaign,actorId,value.recipientId,value.projectName,value.partner,JSON.stringify(value.missions),JSON.stringify(value.boosts),JSON.stringify(value.impacts),value.message,requestId,hash,value.recipientScope??null]);
     await db.query(`INSERT INTO point_entries(campaign,user_id,booster_id,kind,points) VALUES($1,$2,$4,'send',10),($1,$3,$4,'receive',20)`, [campaign,actorId,value.recipientId,id]);
     return { id, replayed: false };
   });
@@ -81,6 +89,7 @@ export function presentRecord(row) {
     id: row.id, senderId: row.sender_id, recipientId: row.recipient_id,
     from: row.sender.USER_NM, team: row.sender.DEPT_NM, recipient: row.recipient.USER_NM,
     recipientTeam: row.recipient.DEPT_NM, projectName: row.project_name, partner: row.partner,
+    recipientScope: row.recipient_scope ?? null,
     missions: row.missions, boosts: row.boosts, impacts: row.impacts,
     mission: row.missions.join(' · '), boost: row.boosts[0], impact: row.impacts[0], message: row.message,
     time: row.created_at.toISOString(), sentAt: row.created_at.getTime(), replied: Boolean(row.reply_at),

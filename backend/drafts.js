@@ -1,9 +1,11 @@
-import { AppError, OPTIONS, text } from './domain.js';
+import { AppError, OPTIONS, text, validateRecipientScope } from './domain.js';
 import { PRAISE_INSTRUCTIONS, PROMPT_VERSION } from './praise-prompt.js';
 
 export function validateDraft(input){
   const value={projectName:text(input.projectName,100,'업무명'),partner:input.partner};
   if(!OPTIONS.partner.includes(value.partner))throw new AppError(400,'INVALID_PARTNER','상대방과의 관계를 선택해 주세요.');
+  const recipientScope=validateRecipientScope(input.recipientScope);
+  if(recipientScope!==undefined)value.recipientScope=recipientScope;
   for(const field of ['missions','boosts','impacts']){
     const selected=input[field];
     if(!Array.isArray(selected)||selected.length<1||selected.length>3||new Set(selected).size!==selected.length||selected.some(item=>!OPTIONS[field].includes(item)))throw new AppError(400,'INVALID_SELECTION','업무·협업 역량·효과를 각각 1~3개 선택해 주세요.');

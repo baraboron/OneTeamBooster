@@ -24,26 +24,55 @@ function remainingDailyBoosters(){if(remoteWorkspace?.getState().enabled)return 
 function isRecipientWeeklyLimited(recipient){const name=recipient.trim();return Boolean(name)&&sentSince(mondayStart()).some(item=>item.recipient===name);}
 function sendLimitMessage(values){if(remoteWorkspace?.getState().enabled){if(!remoteWorkspace.getState().ready)return '테스트 사용자를 선택하고 서버 연결을 확인해 주세요.';if((data.weeklyRecipientIds||[]).includes(values.recipientId))return '같은 동료에게는 월요일 기준 주 1회만 보낼 수 있습니다.';if(remainingDailyBoosters()===0)return '오늘은 부스터를 3회 모두 보냈어요.';return '';}if(values.isDemo||values.directoryDraft)return '';if(remainingDailyBoosters()===0)return '오늘은 부스터를 3회 모두 보냈어요. 내일 다시 보낼 수 있습니다.';if(isRecipientWeeklyLimited(values.recipient))return '같은 동료에게는 월요일 기준으로 주 1회만 부스터를 보낼 수 있습니다.';return '';}
 function toast(message){const element=$('#toast');element.textContent=message;element.classList.add('show');setTimeout(()=>element.classList.remove('show'),2800);}
-function storedSelections(item,key){const plural={mission:'missions',boost:'boosts',impact:'impacts'}[key];return Array.isArray(item[plural])?item[plural]:(key==='mission'?String(item[key]||'').split(' · '):[item[key]]).filter(Boolean);}
-function countBy(list,key){return list.reduce((all,item)=>{for(const value of new Set(storedSelections(item,key)))all[value]=(all[value]||0)+1;return all;},{});}
+function storedSelections(item,key){const plural={mission:'missions',boost:'boosts',impact:'impacts'}[key];const values=Array.isArray(item[plural])?item[plural]:(key==='mission'?String(item[key]||'').split(' · '):[item[key]]);return values.filter(value=>typeof value==='string'&&value.trim()).map(value=>value.trim());}
+function countBy(list,key){return list.reduce((all,item)=>{for(const value of new Set(storedSelections(item,key)))all[value]=(all[value]||0)+1;return all;},Object.create(null));}
 function topOf(list,key,fallback='아직 기록 없음'){return Object.entries(countBy(list,key)).sort((a,b)=>b[1]-a[1])[0]?.[0]||fallback;}
-function formatSelections(item){return `<div class="meta-tags"><span>${escapeHtml(item.partner)}</span><span>${escapeHtml(storedSelections(item,'mission').join(' · '))}</span><span>${escapeHtml(storedSelections(item,'boost').join(' → '))}</span><span>${escapeHtml(storedSelections(item,'impact').join(' → '))}</span></div>`;}
+function scopeLabel(value){return {'같은팀':'같은 팀/그룹','타팀':'타 팀/그룹'}[value]||'';}
+function formatSelections(item){return `<div class="meta-tags"><span>${escapeHtml(item.partner)}</span>${scopeLabel(item.recipientScope)?`<span>${scopeLabel(item.recipientScope)}</span>`:''}<span>${escapeHtml(storedSelections(item,'mission').join(' · '))}</span><span>${escapeHtml(storedSelections(item,'boost').join(' → '))}</span><span>${escapeHtml(storedSelections(item,'impact').join(' → '))}</span></div>`;}
 function summaryCards(items){return items.map(([value,label])=>`<article class="summary-card"><b>${escapeHtml(value)}</b><span>${escapeHtml(label)}</span></article>`).join('');}
-function receivedCard(item){return `<article class="booster-card"><div class="card-top"><span class="avatar">${initials(item.from)}</span><div><b>${escapeHtml(item.from)}</b><small>${escapeHtml(item.team)} · ${escapeHtml(item.time)}</small></div><span class="state received-state">${item.isDemo?'시연 받음':'받음'}</span></div>${formatSelections(item)}<p class="message">${escapeHtml(item.message)}</p><div class="card-bottom">${item.replied?`<div><span class="replied">✓ 감사 답장을 보냈어요${item.replyPointsAwarded?' · 내 포인트 +5P':''}</span>${item.replyText?`<small class="reply-text">${escapeHtml(item.replyText)}</small>`:''}</div>`:`<button class="reply" data-reply="${item.id}">감사 답장 고르기 · 내 포인트 +5P</button>`}<button class="text-button report-from-card">분석 보기</button></div></article>`;}
+function receivedCard(item){return `<article class="booster-card"><div class="card-top"><span class="avatar">${initials(item.from)}</span><div><b>${escapeHtml(item.from)}</b><small>${escapeHtml(item.team||'소속 정보 없음')} · ${escapeHtml(item.time)}</small></div><span class="state received-state">${item.isDemo?'시연 받음':'받음'}</span></div>${formatSelections(item)}<p class="message">${escapeHtml(item.message)}</p><div class="card-bottom">${item.replied?`<div><span class="replied">✓ 감사 답장을 보냈어요${item.replyPointsAwarded?' · 내 포인트 +5P':''}</span>${item.replyText?`<small class="reply-text">${escapeHtml(item.replyText)}</small>`:''}</div>`:`<button class="reply" data-reply="${item.id}">감사 답장 고르기 · 내 포인트 +5P</button>`}<button class="text-button report-from-card">분석 보기</button></div></article>`;}
 function sentCard(item){const reply=item.recipientReply?`<div class="recipient-reply"><b>받은 감사 답장</b><p>${escapeHtml(item.recipientReply)}</p>${item.recipientReplyAt?`<small>${escapeHtml(item.recipientReplyAt)}</small>`:''}</div>`:'<p class="recipient-reply-empty">감사 답장이 아직 오지 않았습니다.</p>';return `<article class="booster-card"><div class="card-top"><span class="avatar sent-avatar">${initials(item.recipient)}</span><div><b>${escapeHtml(item.recipient)}</b><small>${escapeHtml(item.time)}</small></div><span class="state sent-state">${item.isDemo?'시연 보냄':'보냄'}</span></div>${formatSelections(item)}<p class="message">${escapeHtml(item.message)}</p>${reply}<div class="card-bottom"><button class="secondary reuse" data-reuse="${item.id}">이 내용 재사용</button></div></article>`;}
 function pieChartMarkup(label,key,received,colors){
  const entries=Object.entries(countBy(received,key)).sort((a,b)=>b[1]-a[1]),total=entries.reduce((sum,[,count])=>sum+count,0);
+ if(!total)return `<section class="praise-chart"><h4>${label}</h4><p class="chart-empty">선택된 항목이 없습니다.</p></section>`;
  let offset=0;
  const slices=entries.map(([name,count],index)=>{const start=offset,end=offset+count/total*100,color=colors[index%colors.length];offset=end;return `${color} ${start}% ${end}%`;}).join(',');
  const detail=entries.map(([name,count])=>`${name} ${count}건`).join(', ');
- return `<section class="praise-chart"><h4>${label}</h4><div class="pie-chart" style="--pie-slices:${slices}" role="img" aria-label="${escapeHtml(label)}: ${escapeHtml(detail)}"><span>${total}<small>건</small></span></div><ul>${entries.map(([name,count],index)=>`<li><i style="--legend-color:${colors[index%colors.length]}"></i><span>${escapeHtml(name)}</span><b>${count}건</b></li>`).join('')}</ul></section>`;
+ return `<section class="praise-chart"><h4>${label}</h4><div class="pie-chart" style="--pie-slices:${slices}" role="img" aria-label="${escapeHtml(label)} 선택 횟수 기준: ${escapeHtml(detail)}"><span>${total}<small>회</small></span></div><ul>${entries.map(([name,count],index)=>`<li><i style="--legend-color:${colors[index%colors.length]}"></i><span>${escapeHtml(name)}</span><b>${count}건</b></li>`).join('')}</ul></section>`;
+}
+const analysisDimensions=[
+ {key:'partner',label:'OneTeam Partner',description:'메시지를 전달받을 상대방과의 관계'},
+ {key:'mission',label:'Mission Record',description:'상대방과 함께한 협업업무의 종류'},
+ {key:'boost',label:'Boost Point',description:'협업과정에서 보여준 상대방의 핵심 협업역량'},
+ {key:'impact',label:'OneTeam Impact',description:'원팀이 되어 만들어낸 긍정적인 변화와 결실'}
+];
+function analysisScope(){
+ const state=remoteWorkspace?.getState();
+ if(state&&!state.checked)return '서버 연결 확인 중입니다.';
+ if(state?.enabled){
+   if(!state.employee)return '테스트 사용자를 선택하면 받은 칭찬을 분석합니다.';
+   if(state.error)return '연결 오류 · 마지막으로 불러온 테스트 기록입니다. 다시 연결해 주세요.';
+   if(!state.ready)return '선택한 사용자의 받은 칭찬을 불러오는 중입니다.';
+   return `테스트 기록 · 내가 받은 칭찬 ${data.received.length}건 · 전체 기간`;
+ }
+ return `로컬 시연 기록 · 내가 받은 칭찬 ${data.received.length}건 · 전체 저장 기록`;
 }
 function briefingMarkup(received){
  if(!received.length)return '<p class="helper">아직 받은 칭찬이 없어요. 칭찬이 도착하면 항목별 통계를 보여드릴게요.</p>';
- const colors=['#294f9b','#a95022','#17696d','#6b46aa','#996013','#23734f','#5f6f83'];
- return `<div class="praise-charts">${pieChartMarkup('미션 레코드','mission',received,colors)}${pieChartMarkup('부스트포인트','boost',received,colors)}${pieChartMarkup('원팀 임팩트','impact',received,colors)}</div>`;
+ const colors=['var(--blue)','var(--orange)','var(--teal)','var(--violet)','var(--amber)','var(--green)','var(--muted)'];
+ return `<div class="praise-charts">${analysisDimensions.map(({label,key})=>pieChartMarkup(label,key,received,colors)).join('')}</div><p class="data-note">각 차트는 항목이 선택된 횟수 기준입니다. 복수 선택을 포함합니다.</p>`;
 }
-function renderReport(){const received=data.received,sent=data.sentBoosters,strength=Object.entries(countBy(received,'boost')).sort((a,b)=>b[1]-a[1]);$('#report-content').innerHTML=`<div class="report-score"><div><small>현재 점수</small><b>${data.points}P</b></div><div><small>받은 칭찬</small><b>${received.length}건</b></div><div><small>보낸 칭찬</small><b>${sent.length}건</b></div></div><section><h3>동료가 칭찬한 항목</h3>${strength.map(([name,count])=>`<div class="report-bar"><span>${escapeHtml(name)}</span><i><b style="width:${Math.round(count/Math.max(1,received.length)*100)}%"></b></i><em>${count}회</em></div>`).join('')}</section><section><h3>주고받은 칭찬</h3><p>지금까지 칭찬 ${received.length}건을 받고, ${sent.length}건을 보냈어요. 위 항목은 동료가 칭찬을 보낼 때 선택한 내용이에요.</p></section>`;}
+function renderReport(){
+ const received=data.received;
+ $('#report-content').innerHTML=`<p>${escapeHtml(analysisScope())}</p><p>칭찬을 보낸 사람이 선택한 내용을 집계합니다. 관계는 발신자가 나를 바라본 기준이며, 반대 관계로 바꾸지 않습니다.</p><p>비율은 전체 받은 칭찬 ${received.length}건 중 해당 항목이 선택된 칭찬의 비율입니다. 복수 선택과 2·3순위를 각각 포함하므로 비율의 합은 100%를 넘을 수 있습니다. 순위별 가중치는 적용하지 않습니다.</p>${!received.length?'<p class="empty">아직 받은 칭찬이 없습니다.</p>':''}${analysisDimensions.map(({key,label,description})=>{
+   const entries=Object.entries(countBy(received,key)).sort((a,b)=>b[1]-a[1]);
+   const missing=received.filter(item=>!storedSelections(item,key).length).length;
+   return `<section><h3>${label}</h3><p>${description}</p>${entries.length?entries.map(([name,count])=>{
+     const percent=Math.round(count/received.length*100);
+     return `<div class="report-bar"><span>${escapeHtml(name)}</span><i aria-hidden="true"><b style="width:${percent}%"></b></i><em>${count}건 · ${percent}%</em></div>`;
+   }).join(''):'<p class="helper">선택된 항목이 없습니다.</p>'}${missing?`<p class="helper">항목이 기록되지 않은 칭찬 ${missing}건</p>`:''}</section>`;
+ }).join('')}`;
+}
 function render(){
  const totalPoints=data.points;
  const received=data.received,sent=data.sentBoosters,unreplied=received.filter(item=>!item.replied).length,replyRewards=received.filter(item=>item.replyPointsAwarded).length;
@@ -52,9 +81,9 @@ function render(){
  $('#point-breakdown').innerHTML=[['받은 부스터',`${received.length}건 · 20P/건`],['보낸 부스터',`${sent.length}건 · 10P/건`],['감사 답장',`${replyRewards}건 · +${replyRewards*5}P`]].map(([label,value])=>`<div><span>${label}</span><b>${value}</b></div>`).join('');
  $('#score-strip').innerHTML=`<div><small>받은 칭찬</small><b>${received.length}<em>건</em></b></div><div><small>전한 칭찬</small><b>${sent.length}<em>건</em></b></div><div><small>답장을 기다리는 칭찬</small><b>${unreplied}<em>건</em></b></div><div><small>답장 완료</small><b>${replyRewards}<em>건</em></b></div>`;
 
- $('#praise-briefing').innerHTML=briefingMarkup(received);
+ $('#analysis-scope').textContent=analysisScope();$('#praise-briefing').innerHTML=briefingMarkup(received);
  const activity=[...received.map(item=>({...item,type:'받은'})),...sent.map(item=>({...item,from:item.recipient,type:'보낸'}))].slice(0,4);
- $('#recent-list').innerHTML=activity.map(item=>`<article class="activity-row"><span class="avatar">${initials(item.from)}</span><div><small>${item.type} 부스터 · ${escapeHtml(item.mission)}</small><b>${escapeHtml(item.from)}님${item.type==='받은'?'이 보낸 칭찬':'에게 보낸 칭찬'}</b><p>${escapeHtml(item.message)}</p></div><time>${escapeHtml(item.time)}</time></article>`).join('');
+ $('#recent-list').innerHTML=activity.map(item=>`<article class="activity-row"><span class="avatar">${initials(item.from)}</span><div><small>${item.type} 부스터 · ${escapeHtml(item.mission)}</small><b>${escapeHtml(item.from)}님${item.type==='받은'?`(${escapeHtml(item.team||'소속 정보 없음')})이 보낸 칭찬`:'에게 보낸 칭찬'}</b><p>${escapeHtml(item.message)}</p></div><time>${escapeHtml(item.time)}</time></article>`).join('');
  $('#received-summary').innerHTML=summaryCards([[`${received.length}건`,'받은 부스터 · 전체'],[topOf(received,'mission'),'미션 레코드 · 가장 많이 받은 항목'],[topOf(received,'boost'),'부스트포인트 · 가장 많이 받은 항목'],[topOf(received,'impact'),'원팀 임팩트 · 가장 많이 받은 항목']]);
  $('#sent-summary').innerHTML=summaryCards([[`${sent.length}건`,'보낸 부스터 · 전체'],[topOf(sent,'mission'),'미션 레코드 · 가장 많이 선택한 항목'],[topOf(sent,'boost'),'부스트포인트 · 가장 많이 선택한 항목'],[topOf(sent,'impact'),'원팀 임팩트 · 가장 많이 선택한 항목']]);
  $('#received-list').innerHTML=received.map(receivedCard).join('');$('#sent-list').innerHTML=sent.length?sent.map(sentCard).join(''):'<p class="empty">보낸 부스터가 없습니다. 첫 칭찬을 전해보세요.</p>';
@@ -67,7 +96,7 @@ function selectChoices(name,values){const group=$('[data-name="'+name+'"]');if(!
 function selectChoice(name,value){selectChoices(name,[value]);}
 const apiClient=window.OTBApiClient?new window.OTBApiClient():null;
 let draftGeneration=null;
-const remoteWorkspace=window.OTBTestWorkspace?.create({api:apiClient,onData:value=>{data=value;render();},onState:renderTestSession,onRanking:(value,error)=>HomeWorkspace.setTestRanking(value,error)});
+const remoteWorkspace=window.OTBTestWorkspace?.create({api:apiClient,onData:value=>{data=value;render();},onState:renderTestSession});
 function renderTestSession(state){
  $('#test-user-panel').hidden=state.checked&&!state.enabled;
  $('#test-user-status').textContent=state.error||(!state.checked?'서버 연결 확인 중':state.busy?'저장 중':!state.employee?'테스트 사용자를 선택하세요.':state.ready?'테스트 사용자 · 서버 연결됨':'불러오는 중');
@@ -78,13 +107,12 @@ function renderTestSession(state){
  $('#test-user').value=state.employee?.USER_ID||'';
  $('#test-mode-notice').hidden=!state.enabled;
  $('#recipient-source-field').hidden=state.enabled;
- $('#draft-guide').textContent=state.enabled?'업무명·관계·선택 항목을 OpenAI에 보내 칭찬 초안을 만듭니다. 업무명에는 기밀이나 개인정보를 넣지 마세요. 직원 이름·부서·이메일은 보내지 않으며, 초안은 확인하고 수정한 뒤 전송합니다.':'함께한 업무와 고마웠던 점, 도움이 된 결과를 골라주세요. 현재는 템플릿 기반 시연입니다. 초안을 확인하고 수정한 뒤 저장합니다.';
+ $('#draft-guide').textContent=state.enabled?'업무명·관계·소속 구분·선택 항목을 OpenAI에 보내 칭찬 초안을 만듭니다. 업무명에는 기밀이나 개인정보를 넣지 마세요. 직원 이름·부서·이메일은 보내지 않으며, 초안은 확인하고 수정한 뒤 전송합니다.':'함께한 업무와 고마웠던 점, 도움이 된 결과를 골라주세요. 현재는 템플릿 기반 시연입니다. 초안을 확인하고 수정한 뒤 저장합니다.';
  if(state.enabled){
    $('#demo-role').hidden=true;$('#demo-role-label').hidden=true;$('#local-demo-actions').hidden=true;
    LeaderWorkspace.testMode=true;$('[data-view="insight"]').hidden=true;
    $('#current-user-name').textContent=state.employee?.USER_NM||'테스트 사용자 미선택';
    $('#current-user-department').textContent=state.employee?.DEPT_NM||'';$('#current-user-avatar').textContent=state.employee?.USER_NM?.slice(0,1)||'—';
-   $('#leaderboard-title').textContent='테스트 포인트 TOP 10';HomeWorkspace.setTestMode(true);
    $('#recipient-source').value='directory';$('#recipient-source').disabled=true;
    $('#employee-directory-note').textContent='실제 임직원 검색입니다. 선택한 직원에게 보낸 칭찬과 포인트는 테스트 기록으로만 저장됩니다.';
    $('#open-employee-search').disabled=!state.ready||state.busy;
@@ -104,7 +132,7 @@ function setRecipientSource(source){
  if(actual)employeePicker?.open();
 }
 $('#recipient-source').addEventListener('change',event=>setRecipientSource(event.target.value));
-function openComposer(reuse,isDemo=false,source='demo'){cancelDraftGeneration();if(remoteWorkspace?.getState().enabled){if(!remoteWorkspace.getState().ready||remoteWorkspace.getState().busy){toast('테스트 사용자를 선택하고 서버 연결을 확인해 주세요.');return;}source='directory';isDemo=false;}if(source!=='directory'&&!isDemo&&remainingDailyBoosters()===0){toast('오늘은 부스터를 3회 모두 보냈어요. 내일 다시 보낼 수 있습니다.');return;}$('#modal').classList.add('open');$('#booster-form').classList.remove('hidden');$('#message-preview').classList.add('hidden');$('#booster-form').dataset.demo=String(isDemo);setRecipientSource(source);if(reuse){$('#project-name').value=reuse.projectName||'';if(!remoteWorkspace?.getState().enabled)$('#recipient').value=reuse.recipient;selectChoice('partner',reuse.partner);['mission','boost','impact'].forEach(name=>selectChoices(name,storedSelections(reuse,name)));}else if(isDemo){$('#recipient').value='시연 동료 '+(data.sentBoosters.filter(item=>item.isDemo).length+1);}$('#project-name').focus();}
+function openComposer(reuse,isDemo=false,source='demo'){cancelDraftGeneration();if(remoteWorkspace?.getState().enabled){if(!remoteWorkspace.getState().ready||remoteWorkspace.getState().busy){toast('테스트 사용자를 선택하고 서버 연결을 확인해 주세요.');return;}source='directory';isDemo=false;}if(source!=='directory'&&!isDemo&&remainingDailyBoosters()===0){toast('오늘은 부스터를 3회 모두 보냈어요. 내일 다시 보낼 수 있습니다.');return;}$('#modal').classList.add('open');$('#booster-form').classList.remove('hidden');$('#message-preview').classList.add('hidden');$('#booster-form').dataset.demo=String(isDemo);setRecipientSource(source);if(reuse){$('#project-name').value=reuse.projectName||'';if(!remoteWorkspace?.getState().enabled)$('#recipient').value=reuse.recipient;selectChoice('partner',reuse.partner);selectChoices('recipientScope',reuse.recipientScope?[reuse.recipientScope]:[]);['mission','boost','impact'].forEach(name=>selectChoices(name,storedSelections(reuse,name)));}else if(isDemo){$('#recipient').value='시연 동료 '+(data.sentBoosters.filter(item=>item.isDemo).length+1);}if(!reuse)selectChoices('recipientScope',[]);$('#project-name').focus();}
 $('#open-employee-search').onclick=()=>openComposer(null,false,'directory');
 function closeModal(id){$('#'+id).classList.remove('open');if(id==='modal'){cancelDraftGeneration();employeePicker?.reset();if($('#recipient-source').value==='directory'){$('#recipient').value='';$('#message-text').value='';delete $('#message-preview').dataset.values;}}}
 function draftMessage(values){return PraiseCopy.draft(values);}
@@ -127,7 +155,8 @@ $('#booster-form').addEventListener('submit',async event=>{
  event.preventDefault();if(draftGeneration)return;
  const missions=selectionList('mission'),boosts=selectionList('boost'),impacts=selectionList('impact');
  if(!missions.length||!boosts.length||!impacts.length){toast('Mission, Boost Point, Impact를 각각 선택해 주세요.');return;}
- const values={projectName:$('#project-name').value.trim(),recipient:$('#recipient').value.trim(),partner:selected('partner'),mission:missions.join(' · '),boost:boosts[0],impact:impacts[0],missions,boosts,impacts,directoryDraft:$('#recipient-source').value==='directory',recipientId:employeePicker?.getSelected()?.USER_ID,isDemo:$('#booster-form').dataset.demo==='true'};
+ const values={projectName:$('#project-name').value.trim(),recipient:$('#recipient').value.trim(),partner:selected('partner'),recipientScope:selected('recipientScope'),mission:missions.join(' · '),boost:boosts[0],impact:impacts[0],missions,boosts,impacts,directoryDraft:$('#recipient-source').value==='directory',recipientId:employeePicker?.getSelected()?.USER_ID,isDemo:$('#booster-form').dataset.demo==='true'};
+ if(!values.recipientScope){toast('같은 팀/그룹 또는 타 팀/그룹을 선택해 주세요.');return;}
  if(!values.projectName){toast('프로젝트 또는 업무명을 입력해 주세요.');$('#project-name').focus();return;}
  if(values.directoryDraft&&!employeePicker?.getSelected()){toast('검색 결과에서 임직원을 선택해 주세요.');return;}
  if(!values.recipient){toast('부스터를 받을 동료 이름을 입력해 주세요.');return;}
@@ -157,7 +186,7 @@ $('#booster-form').addEventListener('submit',async event=>{
  $('#booster-form').classList.add('hidden');$('#message-preview').classList.remove('hidden');$('#message-text').focus();
 });
 $('#back-to-form').onclick=()=>{$('#booster-form').classList.remove('hidden');$('#message-preview').classList.add('hidden');};
-$('#send-booster').onclick=async()=>{const values=JSON.parse($('#message-preview').dataset.values),limitMessage=sendLimitMessage(values);if(remoteWorkspace?.getState().enabled){if(limitMessage){toast(limitMessage);return;}try{await remoteWorkspace.send({...values,message:$('#message-text').value},values.requestId);closeModal('modal');toast('테스트 칭찬을 저장했습니다. 발신 10P·수신 20P가 반영됩니다.');}catch(error){toast(error.message);}return;}if(values.directoryDraft){toast('실제 칭찬 전송은 로그인 연결 후 사용할 수 있습니다.');return;}if(!values.projectName){toast('프로젝트 또는 업무명을 입력해 주세요.');return;}if(limitMessage){toast(limitMessage);return;}data.sentBoosters.unshift({id:`s${Date.now()}`,...values,message:$('#message-text').value,time:'방금 전',sentAt:Date.now()});data.points+=10;save();render();closeModal('modal');$('#booster-form').reset();selectChoice('partner','동료');selectChoice('mission','문서 작성');selectChoice('boost','정보 공유');selectChoice('impact','품질 향상');toast('칭찬을 보냈어요. 내 포인트에 10P를 더했어요.');};
+$('#send-booster').onclick=async()=>{const values=JSON.parse($('#message-preview').dataset.values),limitMessage=sendLimitMessage(values);if(remoteWorkspace?.getState().enabled){if(limitMessage){toast(limitMessage);return;}try{await remoteWorkspace.send({...values,message:$('#message-text').value},values.requestId);closeModal('modal');toast('테스트 칭찬을 저장했습니다. 발신 10P·수신 20P가 반영됩니다.');}catch(error){toast(error.message);}return;}if(values.directoryDraft){toast('실제 칭찬 전송은 로그인 연결 후 사용할 수 있습니다.');return;}if(!values.projectName){toast('프로젝트 또는 업무명을 입력해 주세요.');return;}if(limitMessage){toast(limitMessage);return;}data.sentBoosters.unshift({id:`s${Date.now()}`,...values,message:$('#message-text').value,time:'방금 전',sentAt:Date.now()});data.points+=10;save();render();closeModal('modal');$('#booster-form').reset();selectChoice('partner','동료');selectChoices('recipientScope',[]);selectChoice('mission','문서 작성');selectChoice('boost','정보 공유');selectChoice('impact','품질 향상');toast('칭찬을 보냈어요. 내 포인트에 10P를 더했어요.');};
 $('#received-list').addEventListener('click',event=>{const id=event.target.dataset.reply;if(id){const item=data.received.find(value=>value.id===id);if(item&&!item.replied){$('#reply-booster-id').value=id;$('#reply-template').value='따뜻한 칭찬 덕분에 힘이 났어요. 함께해 주셔서 고맙습니다.';$('#reply-modal').classList.add('open');}}if(event.target.classList.contains('report-from-card'))$('#report-modal').classList.add('open');});
 $('#reply-form').addEventListener('submit',async event=>{event.preventDefault();const item=data.received.find(value=>value.id===$('#reply-booster-id').value);if(!item||item.replied){closeModal('reply-modal');return;}if(remoteWorkspace?.getState().enabled){try{await remoteWorkspace.reply(item.id,$('#reply-template').value);closeModal('reply-modal');toast('테스트 답장을 저장했습니다. 답장자에게 5P가 반영됩니다.');}catch(error){toast(error.message);}return;}item.replied=true;item.replyText=$('#reply-template').value;item.replyPointsAwarded=true;data.points+=5;save();render();closeModal('reply-modal');toast(`${item.from}님에게 감사 답장을 보냈어요. 내 포인트에 +5P가 반영됩니다.`);});
 $('#sent-list').addEventListener('click',event=>{const item=data.sentBoosters.find(value=>value.id===event.target.dataset.reuse);if(item)openComposer(item);});

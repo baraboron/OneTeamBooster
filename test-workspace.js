@@ -1,6 +1,6 @@
 (function(root){
   const empty=()=>({points:0,received:[],sentBoosters:[],remainingToday:3,weeklyRecipientIds:[]});
-  function create({api,onData=()=>{},onState=()=>{},onRanking=()=>{},storage=root.sessionStorage}={}){
+  function create({api,onData=()=>{},onState=()=>{},storage=root.sessionStorage}={}){
     let state={checked:false,enabled:false,aiEnabled:false,ready:false,busy:false,employee:null,users:[],error:''},version=0,timer,refreshing=false;
     const notify=()=>onState({...state});
     const remember=id=>{try{storage?.setItem('otb-test-user',id);}catch{}};
@@ -13,7 +13,6 @@
         if(current!==version)return;
         if(data.mode!=='test'||data.employee?.USER_ID!==state.employee.USER_ID||!Array.isArray(data.received)||!Array.isArray(data.sentBoosters))throw new Error('서버 사용자 정보를 확인할 수 없습니다.');
         state.ready=true;state.error='';onData(data);notify();
-        try {const ranking=await api.leaderboard();if(current===version)onRanking(ranking);}catch{if(current===version)onRanking(null,'테스트 순위를 불러오지 못했습니다.');}
       }catch(error){if(current===version){state.ready=false;state.error=error.message||'서버 연결을 확인해 주세요.';notify();}}
       finally{if(current===version)refreshing=false;}
     }
@@ -21,7 +20,7 @@
       if(state.busy)return false;
       version++;refreshing=false;state.employee=state.users.find(user=>user.USER_ID===id)||null;
       state.ready=false;state.error='';api.setTestUser(state.employee?.USER_ID);remember(state.employee?.USER_ID||'');
-      onData(empty());onRanking(null);notify();await refresh();return true;
+      onData(empty());notify();await refresh();return true;
     }
     async function init(){
       clearInterval(timer);
