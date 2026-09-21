@@ -18,11 +18,11 @@
 ## K3s 배포 작업 안내
 
 - 배포 관련 작업은 `deploy/README.md`와 `deploy/helm/oneteambooster`를 먼저 확인한다. 원격 K3s는 3노드이며 Ingress class는 `nginx`, Harbor는 `wonix-ops.ips.co.kr`이다(2026-09-18 확인).
-- 현재 시연 배포: `http://192.168.20.72:30081`, namespace `oneteambooster-preview`, Helm release `otb`, 값 파일 `deploy/values-preview.yaml`. 원격 소스는 `/home/admin/tmp/otb-fetch-fix-20260921`에 있다. 2026-09-21 사용자 승인으로 Helm 리비전 4에 fetch 호출 오류 수정을 배포했다. 프런트엔드 이미지는 `fetch-fix-20260921-v1`, 백엔드는 `test-users-20260921-v1`이다.
+- 현재 테스트 배포: `http://192.168.20.72:30081`, namespace `oneteambooster-preview`, Helm release `otb`. `deploy/values-preview.yaml` + `deploy/values-ci.yaml`을 적용한다. 사용자 요청으로 GitHub `baraboron/OneTeamBooster`의 main 변경을 Jenkins `OneTeamBooster-main`이 1분 간격으로 감지해 자동 테스트·빌드·배포한다. 2026-09-21 자동 SCM 빌드 #2와 Helm 리비전 5 배포가 성공했다. 이후 최신 배포는 Jenkins 및 helm history에서 확인한다. 운영 절차는 `deploy/CI.md` 참고.
 - `backend/`에 인사 동기화, PostgreSQL 저장, 칭찬·답장·중복 방지 포인트 원장, 담당 부서별 리더 조회, 전사 순위 로직이 구현되어 있다. 정식 로그인은 보류했으나 사용자가 송재현·김영훈 선택 방식의 테스트 모드와 배포를 명시적으로 승인했다. 두 테스트 사용자만 `X-OTB-Test-User`로 선택하며 HR 검색·칭찬·답장·포인트는 서버 `otb_preview` 스키마에 저장한다. 실제 인증이나 운영 원장으로 취급하지 않는다. 리더 조회는 계속 403이며 이름/직책에서 권한을 추정하지 않는다.
 - HR API 키는 Windows 자격 증명 관리자 `OneTeamBooster/hr-api/ax.ips.co.kr`와 배포 namespace의 `otb-runtime` Secret에 있다. 코드에서는 `DATA_API_KEY` 환경변수만 참조한다. 키나 실제 직원 목록을 로그·이미지·문서에 넣지 않는다. 사용자가 승인한 임직원 검색/테스트 사용자 화면에서 필요한 정보만 표시하고 인사 데이터는 LocalStorage에 저장하지 않는다. 인사 API 응답 필드는 원래 대문자 명칭을 유지한다.
 - DB 비밀번호는 같은 Secret의 `PGPASSWORD`와 Windows 자격 증명 관리자 `OneTeamBooster/postgres/oneteambooster-preview`에 저장되어 있다. 최초 Secret 생성 스크립트는 기존 Secret을 교체하지 않으며 비밀번호 회전 목적으로 재실행하지 않는다.
-- Harbor 인증서 만료 때문에 현재 프리뷰는 노드 `web-j3-w01`에 직접 적재한 이미지와 `imagePullPolicy: Never`를 사용한다. 단일 노드 시연이며 DB PVC는 local-path 2Gi다. 기존 Harbor/DNS/TLS/다른 앱은 변경하지 않았다.
+- 2026-09-21 사용자 요청으로 `NginX`의 wildcard 인증서를 K3s 외부 TLS Secret 5개에 적용하고 6개 도메인을 검증했다. 만료는 2026-11-20 23:59:59 UTC다. K3s 내부 CA/serving 인증서는 교체하지 않았다. NginX·개인키는 Git과 이미지에서 제외한다. 앱 이미지는 Harbor `library/oneteambooster-{frontend,backend}`에 push하며 registry digest와 IfNotPresent로 배포한다. 단일 노드 `web-j3-w01`, DB local-path 2Gi 구성은 유지한다.
 - `Invoke-RemotePc.ps1 -UploadFile <로컬파일> -DestinationPath <원격절대경로>`로 검증용 자료를 복사할 수 있다. 비밀값이나 접속 스크립트를 앱 이미지/소스 묶음에 포함하지 않는다.
 - 백엔드 변경 시 `npm --prefix backend test`, DB 변경 시 임시 PostgreSQL을 사용하는 `bash deploy/verify-business.sh`, 배포 변경 시 `VALIDATE_CLUSTER=1 bash deploy/verify.sh`로 검증한다. 검증 스크립트는 임시 컨테이너와 클러스터 dry-run을 사용한다. 실제 설치/업데이트는 `deploy/README.md`를 따른다.
 

@@ -2,6 +2,10 @@
 
 **접속 주소: http://192.168.20.72:30081** (사내망)
 
+2026-09-21 11:35 KST: **Jenkins main 자동 배포를 연결했고 SCM 변경으로 시작된 빌드 #2가 성공했다.** 단위·통합 테스트 46개, Helm 검증, Harbor push, Helm 리비전 5 배포 및 실제 HTTP 확인이 통과했다. 이후 main 변경은 1분 간격으로 감지한다. 최신 커밋/배포 결과와 운영 절차는 [Jenkins](https://wonix-cicd.ips.co.kr/job/OneTeamBooster-main/) 및 [CI.md](CI.md) 참고.
+
+아래 리비전 3·4는 자동 배포 연결 전 이력이다.
+
 2026-09-21 11:22 KST 사용자 승인으로 Helm 리비전 4에 프런트엔드 `fetch-fix-20260921-v1`을 반영했다. 브라우저의 `fetch` 호출 대상이 잘못되어 발생하던 `Illegal invocation`을 수정했다. 실제 브라우저에서 오류 해소, 테스트 사용자 목록과 사용자 선택 후 서버 연결 및 테스트 집계를 확인했다. 백엔드 이미지는 기존 버전을 유지한다.
 
 2026-09-21 11:05 KST 사용자 승인 후 Helm 리비전 3으로 배포했다. 송재현·김영훈 테스트 사용자 선택, 실제 HR 검색, 서버의 칭찬·답장·포인트·테스트 TOP 10을 사용할 수 있다. 정식 로그인은 아니며 접속자가 두 사용자 중 하나를 선택하는 테스트 모드다.
@@ -18,17 +22,17 @@
 | K3s | v1.34.5+k3s1, 클러스터 3노드 |
 | Namespace / Helm release | oneteambooster-preview / otb |
 | Chart / app version | 0.2.0 / 0.2.0 |
-| 값 파일 | deploy/values-preview.yaml |
-| 원격 작업 폴더 | /home/admin/tmp/otb-fetch-fix-20260921 |
+| 값 파일 | deploy/values-preview.yaml + deploy/values-ci.yaml |
+| 소스 / 빌드 | GitHub main / Jenkins 임시 Kubernetes agent |
 | 프런트엔드 | NodePort 30081 / 내부 8080 |
 | 백엔드 | ClusterIP 3000, Node 24 + pg |
 | DB | PostgreSQL 17, local-path PVC 2Gi |
-| 이미지 | oneteambooster/frontend:fetch-fix-20260921-v1, oneteambooster/backend:test-users-20260921-v1, postgres:17-alpine |
-| 이미지 배포 방식 | web-j3-w01의 K3s containerd에 직접 import; pullPolicy Never |
+| 앱 이미지 | wonix-ops.ips.co.kr/library/oneteambooster-{frontend,backend}:커밋12자리-빌드번호 |
+| 이미지 배포 방식 | Harbor push 후 digest 고정, IfNotPresent; DB는 기존 postgres:17-alpine 유지 |
 | HR 동기화 | 시작 시 + 매시간, 2026-09-21 전체 조회 1,501명 / 183부서 |
 | 사용자 선택 / UI 연동 | 지정된 두 테스트 사용자 선택, HR 검색 및 서버 테스트 기록 연동 |
 
-Harbor wonix-ops.ips.co.kr의 인증서는 2026-05-08 23:59:59 UTC에 만료됐다. 인증서 검증을 끄거나 기존 서버 설정을 바꾸지 않고 이미지 직접 적재 방식을 사용했다. 현재 프리뷰는 단일 노드에 고정되어 있으며 HA 구성이 아니다. 운영 전 DB 백업·복구와 Harbor 정상화, SSO, 명시적 리더 부서 매핑이 필요하다.
+Harbor와 외부 Ingress TLS는 사용자 제공 인증서로 갱신했고 실제 신뢰 체인/호스트명 검증을 통과했다. 만료는 2026-11-20 23:59:59 UTC다. 현재 프리뷰는 단일 노드에 고정되어 있으며 HA 구성이 아니다. 운영 전 DB 백업·복구, SSO, 명시적 리더 부서 매핑이 필요하다.
 
 ## 비밀정보
 
@@ -56,12 +60,10 @@ IMAGE_TAG=test-users-20260921-v1 VALIDATE_CLUSTER=1 bash deploy/verify.sh
 IMAGE_TAG=test-users-20260921-v1 bash deploy/verify-business.sh
 ```
 
-새 소스 배포 시 새 이미지 태그를 사용한다. Docker build 후 docker save로 이미지 묶음을 만들고, `sudo k3s ctr images import --platform linux/amd64 <절대경로>`로 web-j3-w01에 적재한다. `deploy/values-preview.yaml`의 태그를 맞춘 뒤 다음 명령을 실행한다.
+일반 업데이트는 검토된 변경을 main에 push하면 Jenkins가 수행한다. 이미지를 직접 적재하는 기존 수동 배포 명령을 CI 값 없이 실행하면 과거 이미지로 돌아갈 수 있다. Jenkins의 성공 여부와 다음 명령으로 상태를 확인한다.
 
 ```bash
-helm upgrade --install otb deploy/helm/oneteambooster \
-  -n oneteambooster-preview -f deploy/values-preview.yaml \
-  --atomic --wait --timeout 5m --history-max 5
+helm status otb -n oneteambooster-preview
 helm history otb -n oneteambooster-preview
 # 필요한 경우 확인한 이전 리비전으로만 복구한다.
 # helm rollback otb <revision> -n oneteambooster-preview --wait
@@ -69,7 +71,7 @@ helm history otb -n oneteambooster-preview
 
 Windows에서는 `Invoke-RemotePc.ps1 -RemoteCommand`, `-UploadFile/-DestinationPath`, `-DownloadFile/-LocalPath`를 사용한다. `-Sudo`는 저장된 SSH 자격 증명을 표준입력으로만 전달한다. 자격 증명과 네트워크 접근에는 같은 Windows 사용자 컨텍스트의 샌드박스 외부 실행이 필요할 수 있다.
 
-차트 패키지는 `helm package deploy/helm/oneteambooster --destination artifacts`로 만든다. 실제 값 파일은 별도로 `-f deploy/values-preview.yaml`을 적용한다. Secret은 패키지에 포함되지 않는다. 데이터 PVC는 Helm 제거만으로 자동 삭제하지 않으며 DB 자료를 삭제하는 명령을 사용하지 않는다.
+차트 패키지는 `helm package deploy/helm/oneteambooster --destination artifacts`로 만든다. 실제 CI는 preview/ci 값 파일과 빌드별 digest를 함께 적용한다. Secret 값은 패키지에 포함되지 않는다. 데이터 PVC는 Helm 제거만으로 자동 삭제하지 않으며 DB 자료를 삭제하는 명령을 사용하지 않는다.
 
 ## 코드와 남은 연결 작업
 

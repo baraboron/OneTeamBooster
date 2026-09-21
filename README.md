@@ -1,6 +1,6 @@
 # OneTeam Booster
 
-2026-09-21: 송재현·김영훈을 선택하는 테스트 사용자 모드와 HR 검색 기반 칭찬·답장·포인트 흐름을 구현했습니다. 테스트 기록은 서버의 별도 스키마에 저장되며 실제 로그인은 아닙니다. 사용자 승인 후 기존 사내 사이트(http://192.168.20.72:30081)에 리비전 3으로 배포했고 실제 HTTP 검색·사용자별 조회를 확인했습니다. 상세 범위는 [FEATURE_AUDIT.md](FEATURE_AUDIT.md), 검증은 [deploy/VALIDATION.md](deploy/VALIDATION.md)를 참고하세요.
+2026-09-21: 송재현·김영훈 선택과 HR 검색 기반 칭찬·답장·포인트를 서버 테스트 원장에 연결했습니다. GitHub main 변경은 Jenkins가 1분 간격으로 감지하고, 검증 후 사내 K3s에 자동 배포합니다. 실제 로그인은 아닙니다. 운영 방법은 [deploy/CI.md](deploy/CI.md), 검증 결과는 [deploy/VALIDATION.md](deploy/VALIDATION.md)를 참고하세요.
 
 원익IPS OneTeam 조직문화를 위한 AI 기반 협업격려 캠페인 웹 프로토타입입니다.
 
@@ -14,9 +14,9 @@
 
 ## 실행
 
-사내망 시연 주소: **http://192.168.20.72:30081**. 화면의 칭찬은 브라우저에만 저장된다. 서버에는 인사 API 동기화 및 PostgreSQL 업무 로직을 준비했으며, 로그인은 추후 구현 요청에 따라 보류했다. 상세 배포 상태는 `deploy/README.md`, API 계약은 `backend/README.md` 참고.
+사내망 테스트 주소: **http://192.168.20.72:30081**. 지정된 두 사용자를 선택하면 HR 검색과 서버 PostgreSQL의 분리된 테스트 원장을 사용한다. 정식 로그인은 보류했다. 상세 배포 상태는 `deploy/README.md`, API 계약은 `backend/README.md` 참고.
 
-정적 사이트입니다. `index.html`을 브라우저에서 열거나, 로컬 HTTP 서버로 실행합니다.
+프런트엔드 파일만 로컬에서 확인하려면 아래 HTTP 서버로 실행한다. 테스트 사용자·HR·기록 API를 사용하려면 위의 K3s 사이트 또는 백엔드와 동일 출처 프록시 구성이 필요하다.
 
 ```powershell
 node -e "require('http').createServer((q,s)=>require('fs').createReadStream(q.url==='/'?'index.html':'.'+q.url).pipe(s)).listen(4173)"
@@ -26,7 +26,8 @@ node -e "require('http').createServer((q,s)=>require('fs').createReadStream(q.ur
 
 ## 문서
 
-- `deploy/README.md`: 원격 K3s 조사 결과, 프런트엔드/API 기본 서버의 Helm 배포 준비·검증·후속 과제
+- `deploy/README.md`: 현재 K3s 배포와 상태 확인
+- `deploy/CI.md`: Jenkins main 자동 배포, 권한, 롤백 및 TLS 갱신 기록
 - `AGENTS.md`: 제품 정의, MVP 범위, UX 및 구현 원칙
 - `DESIGN_GUIDELINES.md`: 조사 근거, 디자인 토큰, 화면별 규칙, 접근성 및 지속 적용 기준
 - `FEATURE_AUDIT.md`: 현재 시제품의 기능 상태와 운영 전 후속 과제
