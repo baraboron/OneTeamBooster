@@ -32,13 +32,14 @@ function formatSelections(item){return `<div class="meta-tags"><span>${escapeHtm
 function summaryCards(items){return items.map(([value,label])=>`<article class="summary-card"><b>${escapeHtml(value)}</b><span>${escapeHtml(label)}</span></article>`).join('');}
 function receivedCard(item){return `<article class="booster-card"><div class="card-top"><span class="avatar">${initials(item.from)}</span><div><b>${escapeHtml(item.from)}</b><small>${escapeHtml(item.team||'소속 정보 없음')} · ${escapeHtml(item.time)}</small></div><span class="state received-state">${item.isDemo?'시연 받음':'받음'}</span></div>${formatSelections(item)}<p class="message">${escapeHtml(item.message)}</p><div class="card-bottom">${item.replied?`<div><span class="replied">✓ 감사 답장을 보냈어요${item.replyPointsAwarded?' · 내 포인트 +5P':''}</span>${item.replyText?`<small class="reply-text">${escapeHtml(item.replyText)}</small>`:''}</div>`:`<button class="reply" data-reply="${item.id}">감사 답장 고르기 · 내 포인트 +5P</button>`}<button class="text-button report-from-card">분석 보기</button></div></article>`;}
 function sentCard(item){const reply=item.recipientReply?`<div class="recipient-reply"><b>받은 감사 답장</b><p>${escapeHtml(item.recipientReply)}</p>${item.recipientReplyAt?`<small>${escapeHtml(item.recipientReplyAt)}</small>`:''}</div>`:'<p class="recipient-reply-empty">감사 답장이 아직 오지 않았습니다.</p>';return `<article class="booster-card"><div class="card-top"><span class="avatar sent-avatar">${initials(item.recipient)}</span><div><b>${escapeHtml(item.recipient)}</b><small>${escapeHtml(item.time)}</small></div><span class="state sent-state">${item.isDemo?'시연 보냄':'보냄'}</span></div>${formatSelections(item)}<p class="message">${escapeHtml(item.message)}</p>${reply}<div class="card-bottom"><button class="secondary reuse" data-reuse="${item.id}">이 내용 재사용</button></div></article>`;}
-function pieChartMarkup(label,key,received,colors){
+function pieChartMarkup(label,key,received,colors,description){
  const entries=Object.entries(countBy(received,key)).sort((a,b)=>b[1]-a[1]),total=entries.reduce((sum,[,count])=>sum+count,0);
- if(!total)return `<section class="praise-chart"><h4>${label}</h4><p class="chart-empty">선택된 항목이 없습니다.</p></section>`;
+ const heading=`<h4>${escapeHtml(label)}</h4><p class="praise-chart-description">${escapeHtml(description)}</p>`;
+ if(!total)return `<section class="praise-chart">${heading}<p class="chart-empty">선택된 항목이 없습니다.</p></section>`;
  let offset=0;
  const slices=entries.map(([name,count],index)=>{const start=offset,end=offset+count/total*100,color=colors[index%colors.length];offset=end;return `${color} ${start}% ${end}%`;}).join(',');
  const detail=entries.map(([name,count])=>`${name} ${count}건`).join(', ');
- return `<section class="praise-chart"><h4>${label}</h4><div class="pie-chart" style="--pie-slices:${slices}" role="img" aria-label="${escapeHtml(label)} 선택 횟수 기준: ${escapeHtml(detail)}"><span>${total}<small>회</small></span></div><ul>${entries.map(([name,count],index)=>`<li><i style="--legend-color:${colors[index%colors.length]}"></i><span>${escapeHtml(name)}</span><b>${count}건</b></li>`).join('')}</ul></section>`;
+ return `<section class="praise-chart">${heading}<div class="pie-chart" style="--pie-slices:${slices}" role="img" aria-label="${escapeHtml(label)} 선택 횟수 기준: ${escapeHtml(detail)}"><span>${total}<small>회</small></span></div><ul>${entries.map(([name,count],index)=>`<li><i style="--legend-color:${colors[index%colors.length]}"></i><span>${escapeHtml(name)}</span><b>${count}건</b></li>`).join('')}</ul></section>`;
 }
 const analysisDimensions=[
  {key:'partner',label:'OneTeam Partner',description:'메시지를 전달받을 상대방과의 관계'},
@@ -58,9 +59,9 @@ function analysisScope(){
  return `로컬 시연 기록 · 내가 받은 칭찬 ${data.received.length}건 · 전체 저장 기록`;
 }
 function briefingMarkup(received){
- if(!received.length)return '<p class="helper">아직 받은 칭찬이 없어요. 칭찬이 도착하면 항목별 통계를 보여드릴게요.</p>';
+ const emptyNote=!received.length?'<p class="helper">아직 받은 칭찬이 없어요. 칭찬이 도착하면 항목별 통계를 보여드릴게요.</p>':'';
  const colors=['var(--blue)','var(--orange)','var(--teal)','var(--violet)','var(--amber)','var(--green)','var(--muted)'];
- return `<div class="praise-charts">${analysisDimensions.map(({label,key})=>pieChartMarkup(label,key,received,colors)).join('')}</div><p class="data-note">각 차트는 항목이 선택된 횟수 기준입니다. 복수 선택을 포함합니다.</p>`;
+ return `${emptyNote}<div class="praise-charts">${analysisDimensions.map(({label,key,description})=>pieChartMarkup(label,key,received,colors,description)).join('')}</div><p class="data-note">각 차트는 항목이 선택된 횟수 기준입니다. 복수 선택을 포함합니다.</p>`;
 }
 function renderReport(){
  const received=data.received;

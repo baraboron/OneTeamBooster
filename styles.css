@@ -135,6 +135,7 @@ header p,.panel-title p,.score-card>p,.section-heading>p,.popup>p,.composer>p,.l
 .praise-chart {display:grid;grid-template-columns:84px minmax(0,1fr);column-gap:16px;align-items:center;padding-top:16px;border-top:1px solid var(--line)}
 .praise-chart:first-child {padding-top:0;border-top:0}
 .praise-chart h4 {grid-column:1/-1;margin:0 0 8px;color:var(--ink);font-size:.875rem;line-height:1.5}
+.praise-chart-description {grid-column:1/-1;margin:0 0 12px;color:var(--muted);font-size:.875rem;line-height:1.7;word-break:keep-all;overflow-wrap:anywhere}
 .pie-chart {display:grid;place-items:center;width:84px;height:84px;border-radius:50%;background:conic-gradient(var(--pie-slices));}
 .pie-chart::before {content:'';grid-area:1/1;width:52px;height:52px;border-radius:50%;background:var(--surface)}
 .pie-chart span {grid-area:1/1;z-index:1;color:var(--navy);font-size:1.125rem;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}

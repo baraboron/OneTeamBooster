@@ -34,6 +34,8 @@ test('application boots with received collaboration analysis and sender departme
    assert.ok(node('#praise-briefing').innerHTML.includes(label));
    assert.ok(node('#report-content').innerHTML.includes(label));
  }
+ for(const description of ['메시지를 전달받을 상대방과의 관계','상대방과 함께한 협업업무의 종류','협업과정에서 보여준 상대방의 핵심 협업역량','원팀이 되어 만들어낸 긍정적인 변화와 결실'])assert.ok(node('#praise-briefing').innerHTML.includes(description));
+ assert.equal(node('#report-modal').classList.contains('open'),false);
  node('#open-report-inline').click();assert.equal(node('#report-modal').classList.contains('open'),true);
  const before=node('#motivation-title').textContent;node('#motivation-next').click();
  assert.notEqual(node('#motivation-title').textContent,before);
@@ -143,6 +145,7 @@ test('received analysis counts all selections once, exposes missing values and e
  assert.doesNotMatch(node('#praise-briefing').innerHTML,/NaN|undefined|conic-gradient/);
  assert.match(node('#praise-briefing').innerHTML,/선택된 항목이 없습니다/);
  vm.runInContext('data.received=[];render();',context);
+ assert.equal((node('#praise-briefing').innerHTML.match(/class="praise-chart-description"/g)||[]).length,4);
  assert.match(node('#report-content').innerHTML,/아직 받은 칭찬이 없습니다/);
  assert.doesNotMatch(node('#report-content').innerHTML,/NaN|Infinity/);
 });
