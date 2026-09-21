@@ -70,6 +70,7 @@ const remoteWorkspace=window.OTBTestWorkspace?.create({api:apiClient,onData:valu
 function renderTestSession(state){
  $('#test-user-panel').hidden=state.checked&&!state.enabled;
  $('#test-user-status').textContent=state.error||(!state.checked?'서버 연결 확인 중':state.busy?'저장 중':!state.employee?'테스트 사용자를 선택하세요.':state.ready?'테스트 사용자 · 서버 연결됨':'불러오는 중');
+ $('#test-user-refresh').hidden=!state.error;
  $('#test-user-refresh').disabled=state.busy;
  $('#test-user').disabled=state.busy;
  $('#test-user').innerHTML='<option value="">사용자를 선택하세요</option>'+state.users.map(user=>'<option value="'+escapeHtml(user.USER_ID)+'">'+escapeHtml(user.USER_NM)+' · '+escapeHtml(user.DEPT_NM)+'</option>').join('');
