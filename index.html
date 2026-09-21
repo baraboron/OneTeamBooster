@@ -31,12 +31,13 @@
         <button class="nav-link" data-view="insight">
 <span aria-hidden="true"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></span> 리더 인사이트</button>
       </nav>
-      <label class="demo-role-label" for="demo-role">시제품 역할 전환</label><select id="demo-role"><option value="member">그룹원 · 김원익</option><option value="leader">리더 · 교육G (시연)</option></select>
+      <section id="test-user-panel" hidden><label for="test-user">테스트 사용자 선택</label><select id="test-user"><option value="">사용자를 선택하세요</option></select><p id="test-user-status" role="status"></p><button id="test-user-refresh" type="button" class="secondary">다시 연결</button></section>
+      <label class="demo-role-label" id="demo-role-label" for="demo-role">시제품 역할 전환</label><select id="demo-role"><option value="member">그룹원 · 김원익</option><option value="leader">리더 · 교육G (시연)</option></select>
 <div class="sidebar-foot">
-<span class="avatar small">김</span>
+<span class="avatar small" id="current-user-avatar">김</span>
 <div>
-<b>김원익</b>
-<small>인사팀 교육G</small>
+<b id="current-user-name">김원익</b>
+<small id="current-user-department">인사팀 교육G</small>
 </div>
 </div>
     </aside>
@@ -47,6 +48,7 @@
 <h1 id="page-title">OneTeam(협업)에 대한 인정과 격려를 보냅니다</h1>
 </div>
 <div class="header-actions">
+<button class="secondary" id="open-employee-search">임직원 검색</button>
 <button class="secondary" id="open-report">나의 협업 리포트</button>
 <button class="primary" id="open-composer">+ 부스터 보내기</button>
 <span class="send-limit" id="send-limit" aria-live="polite">오늘 3회 남음</span>
@@ -58,9 +60,10 @@
 <i></i>
 <span>동일인 발송 한도는 매주 월요일에 초기화됩니다.</span>
 </div>
-<div class="demo-test-actions" aria-label="시연 기능">
+<p id="test-mode-notice" class="form-guide" hidden>테스트 모드 · 실제 로그인 없이 사용자를 전환합니다. 인사정보는 실제 조회하며, 칭찬·답장·포인트는 테스트용으로만 저장됩니다.</p>
+<div class="demo-test-actions" id="local-demo-actions" aria-label="시연 기능">
 <span>시연 기능</span>
-<span class="demo-test-description">시연용 기록을 만들어 작성·전송 흐름을 확인합니다.</span>
+<span class="demo-test-description">이 화면의 칭찬은 이 브라우저에만 저장되며 실제 직원에게 전달되지 않습니다. 로그인은 추후 연결됩니다.</span>
 <button class="secondary" id="open-demo-composer">시연용 부스터 작성</button>
 <button class="secondary" id="add-demo-received">시연용 받은 칭찬 추가</button>
 </div>
@@ -141,6 +144,17 @@
 <form id="booster-form">
 <label class="project-name-field" for="project-name">프로젝트 또는 업무명<input required id="project-name" maxlength="100" placeholder="예: 고객사 A 장비 셋업, 3분기 품질 개선"></label>
 <label class="recipient-name-field" for="recipient">누구에게 보내나요?<input required id="recipient" placeholder="이름을 입력하세요"></label>
+<label class="recipient-source-field" for="recipient-source">받는 사람 선택 방식<select id="recipient-source"><option value="demo">시연 이름 직접 입력</option><option value="directory">사내 임직원 검색 · 초안 작성</option></select></label>
+<section id="employee-directory" class="employee-directory" hidden aria-label="사내 임직원 검색">
+<p class="form-guide" id="employee-directory-note">실제 인사정보를 검색합니다. 로그인 연결 전에는 초안만 작성하며, 전송하거나 브라우저에 저장하지 않습니다.</p>
+<label for="employee-query">임직원 검색<input id="employee-query" type="search" maxlength="50" autocomplete="off" placeholder="이름·부서·이메일·직책" aria-describedby="employee-status"></label>
+<label for="employee-department">부서로 좁히기<select id="employee-department"><option value="">전체 부서</option></select></label>
+<p id="employee-status" role="status" aria-live="polite"></p>
+<ul id="employee-results" class="employee-results" aria-label="검색 결과"></ul>
+<button id="employee-more" class="secondary" type="button" hidden>더 보기</button>
+<button id="employee-retry" class="secondary" type="button" hidden>다시 검색</button>
+<p id="employee-selected" role="status" class="employee-selected"></p>
+</section>
 <p class="form-guide">함께한 업무와 고마웠던 점, 도움이 된 결과를 골라주세요. 초안을 확인하고 수정한 뒤 전송합니다. 현재는 템플릿 기반 시연입니다.</p>
 <div class="field selection-field partner-field"><div class="field-heading"><span>01</span><div><label>OneTeam Partner</label><p>메시지를 전달받을 상대방과의 관계</p></div></div><div class="choice-group choice-cards partner-cards" data-name="partner" data-mode="single"><button type="button" class="selected" data-value="동료"><b>동료</b><small>가장 표준적인 비즈니스 톤</small></button><button type="button" data-value="상사 / 선배"><b>상사 / 선배</b><small>예의를 갖춘 정중한 톤</small></button><button type="button" data-value="후배 / 신입"><b>후배 / 신입</b><small>격려와 따뜻함이 담긴 톤</small></button></div></div>
 <div class="field selection-field"><div class="field-heading"><span>02</span><div><label>Mission Record</label><p>상대방과 함께한 협업 업무 <b>최대 3개 복수선택</b></p></div><em data-counter="mission">1 / 3</em></div><div class="choice-group choice-cards mission-cards" data-name="mission" data-mode="multiple"><button type="button" class="selected" data-value="문서 작성"><b>문서 작성</b><small>보고서·SOP·회의자료 작성 지원</small></button><button type="button" data-value="고객 대응"><b>고객 대응</b><small>VOC·긴급 요청에 선제 대응</small></button><button type="button" data-value="성능 개선"><b>성능 개선</b><small>연구·양산 설비 성능 개선</small></button><button type="button" data-value="설비 셋업"><b>설비 셋업</b><small>고객 Site·연구 Fab 셋업 인수</small></button><button type="button" data-value="평가 및 분석"><b>평가 및 분석</b><small>설비·공정 평가와 결과 분석</small></button><button type="button" data-value="프로세스 개선"><b>프로세스 개선</b><small>절차·설비 운영 표준 개선</small></button><button type="button" data-value="안전환경 점검"><b>안전환경 점검</b><small>규정 준수·안전 리스크 점검</small></button></div></div>
@@ -148,7 +162,7 @@
 <button class="primary full" type="submit">메시지 초안 만들기 <span>→</span></button>
 </form>
 <div class="message-preview hidden" id="message-preview">
-<p>보내기 전에 내용을 확인해주세요.</p>
+<p id="message-preview-note">보내기 전에 내용을 확인해주세요.</p>
 <textarea id="message-text" aria-label="전송할 부스터 메시지">
 </textarea>
 <div>
@@ -207,6 +221,9 @@
 <script src="home-config.js"></script>
 <script src="home.js"></script>
 <script src="praise-copy.js"></script>
+<script src="api-client.js"></script>
+<script src="employee-picker.js"></script>
+<script src="test-workspace.js"></script>
 <script src="app.js"></script>
 <script src="ui.js"></script>
 </body>

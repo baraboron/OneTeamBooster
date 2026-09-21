@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "otb.fullname" . }}-nginx
+  labels:
+    {{- include "otb.labels" . | nindent 4 }}
+data:
+  default.conf: |
+    {{- .Files.Get "files/default.conf" | replace "otb-backend" (printf "%s-backend" (include "otb.fullname" .)) | nindent 4 }}

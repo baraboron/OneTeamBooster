@@ -1,0 +1,9 @@
+# Overlay values-preview.yaml. Unique tags and verified registry digests come from CI.
+frontend:
+  image:
+    repository: wonix-ops.ips.co.kr/library/oneteambooster-frontend
+    pullPolicy: IfNotPresent
+backend:
+  image:
+    repository: wonix-ops.ips.co.kr/library/oneteambooster-backend
+    pullPolicy: IfNotPresent

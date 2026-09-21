@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Pod
+spec:
+  serviceAccountName: otb-ci
+  automountServiceAccountToken: false
+  nodeSelector:
+    kubernetes.io/arch: amd64
+  securityContext:
+    fsGroup: 1000
+  containers:
+    - name: tools
+      image: node:24-bookworm@sha256:64af3819f9275802414d7cdc38c27e9d82bd564dec4d4da87d008255d36c63b4
+      command: [sleep]
+      args: ["99d"]
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        allowPrivilegeEscalation: false
+      env:
+        - {name: HOME, value: /home/jenkins}
+      resources:
+        requests: {cpu: 100m, memory: 256Mi}
+        limits: {cpu: "2", memory: 1Gi}
+      volumeMounts:
+        - {name: kube-access, mountPath: /var/run/secrets/kubernetes.io/serviceaccount, readOnly: true}
+    - name: postgres-test
+      image: postgres:17-alpine@sha256:f02121de6f74d30d8a94cd1d9584125e2178d7e6c377d8130112d4e52d867995
+      args: [postgres, -c, listen_addresses=127.0.0.1]
+      env:
+        - {name: POSTGRES_USER, value: otb}
+        - {name: POSTGRES_DB, value: otb_test}
+        - {name: POSTGRES_HOST_AUTH_METHOD, value: trust}
+      resources:
+        requests: {cpu: 100m, memory: 128Mi}
+        limits: {cpu: "1", memory: 512Mi}
+      volumeMounts:
+        - {name: test-database, mountPath: /var/lib/postgresql/data}
+    - name: build-frontend
+      image: gcr.io/kaniko-project/executor:v1.23.2-debug@sha256:c3109d5926a997b100c4343944e06c6b30a6804b2f9abe0994d3de6ef92b028e
+      command: [/busybox/cat]
+      tty: true
+      resources:
+        requests: {cpu: 100m, memory: 128Mi}
+        limits: {cpu: "2", memory: 1Gi}
+      volumeMounts:
+        - {name: registry, mountPath: /kaniko/.docker, readOnly: true}
+    - name: build-backend
+      image: gcr.io/kaniko-project/executor:v1.23.2-debug@sha256:c3109d5926a997b100c4343944e06c6b30a6804b2f9abe0994d3de6ef92b028e
+      command: [/busybox/cat]
+      tty: true
+      resources:
+        requests: {cpu: 100m, memory: 128Mi}
+        limits: {cpu: "2", memory: 1Gi}
+      volumeMounts:
+        - {name: registry, mountPath: /kaniko/.docker, readOnly: true}
+  volumes:
+    - name: registry
+      secret:
+        secretName: harbor-credentials
+        items:
+          - {key: .dockerconfigjson, path: config.json}
+    - name: test-database
+      emptyDir: {medium: Memory, sizeLimit: 256Mi}
+    - name: kube-access
+      projected:
+        sources:
+          - serviceAccountToken: {path: token, expirationSeconds: 3600}
+          - configMap:
+              name: kube-root-ca.crt
+              items:
+                - {key: ca.crt, path: ca.crt}

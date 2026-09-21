@@ -1,5 +1,7 @@
 # OneTeam Booster
 
+2026-09-21: 송재현·김영훈을 선택하는 테스트 사용자 모드와 HR 검색 기반 칭찬·답장·포인트 흐름을 구현했습니다. 테스트 기록은 서버의 별도 스키마에 저장되며 실제 로그인은 아닙니다. 사용자 승인 후 기존 사내 사이트(http://192.168.20.72:30081)에 리비전 3으로 배포했고 실제 HTTP 검색·사용자별 조회를 확인했습니다. 상세 범위는 [FEATURE_AUDIT.md](FEATURE_AUDIT.md), 검증은 [deploy/VALIDATION.md](deploy/VALIDATION.md)를 참고하세요.
+
 원익IPS OneTeam 조직문화를 위한 AI 기반 협업격려 캠페인 웹 프로토타입입니다.
 
 ## 핵심 경험
@@ -12,6 +14,8 @@
 
 ## 실행
 
+사내망 시연 주소: **http://192.168.20.72:30081**. 화면의 칭찬은 브라우저에만 저장된다. 서버에는 인사 API 동기화 및 PostgreSQL 업무 로직을 준비했으며, 로그인은 추후 구현 요청에 따라 보류했다. 상세 배포 상태는 `deploy/README.md`, API 계약은 `backend/README.md` 참고.
+
 정적 사이트입니다. `index.html`을 브라우저에서 열거나, 로컬 HTTP 서버로 실행합니다.
 
 ```powershell
@@ -22,6 +26,7 @@ node -e "require('http').createServer((q,s)=>require('fs').createReadStream(q.ur
 
 ## 문서
 
+- `deploy/README.md`: 원격 K3s 조사 결과, 프런트엔드/API 기본 서버의 Helm 배포 준비·검증·후속 과제
 - `AGENTS.md`: 제품 정의, MVP 범위, UX 및 구현 원칙
 - `DESIGN_GUIDELINES.md`: 조사 근거, 디자인 토큰, 화면별 규칙, 접근성 및 지속 적용 기준
 - `FEATURE_AUDIT.md`: 현재 시제품의 기능 상태와 운영 전 후속 과제

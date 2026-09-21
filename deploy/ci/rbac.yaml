@@ -1,0 +1,37 @@
+# Bootstrap once with the cluster operator, not from the pipeline.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otb-ci
+  namespace: jenkins
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: otb-ci-deployer
+  namespace: oneteambooster-preview
+rules:
+  - apiGroups: [""]
+    resources: [services, configmaps, secrets, persistentvolumeclaims]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [apps]
+    resources: [deployments, statefulsets, replicasets]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [pods, events]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses]
+    verbs: [get, list, watch, create, update, patch, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: otb-ci-deployer
+  namespace: oneteambooster-preview
+subjects:
+  - {kind: ServiceAccount, name: otb-ci, namespace: jenkins}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: otb-ci-deployer

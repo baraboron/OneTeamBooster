@@ -256,6 +256,19 @@ input[type=range] {accent-color:var(--blue);padding:0;cursor:pointer}
 .choice-group button {min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--muted);font-size:.875rem;line-height:1.5}
 .choice-group button.selected {border-color:var(--blue);background:var(--sky);color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
 .form-guide {margin:24px 0 0;padding:12px 16px;background:var(--subtle);border-radius:8px;color:var(--muted);font-size:.875rem;line-height:1.8}
+.recipient-source-field select,.employee-directory select {display:block;width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--muted);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);font-size:1rem}
+#test-user-panel select {width:100%;min-height:44px;border:1px solid var(--muted);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);padding:8px;font-size:.875rem}
+#test-user-panel p {font-size:.75rem;line-height:1.7;color:var(--muted);overflow-wrap:anywhere}
+#test-mode-notice {margin:0 0 24px;background:var(--amber-bg);color:var(--amber)}
+.employee-directory {margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--subtle)}
+.employee-directory p {font-size:.875rem;line-height:1.7;color:var(--muted)}
+.employee-results {list-style:none;margin:16px 0;padding:0;max-height:320px;overflow:auto}
+.employee-results li+li {margin-top:8px}
+.employee-result {display:block;width:100%;min-height:44px;text-align:left;padding:12px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink)}
+.employee-result b,.employee-result span {display:block;overflow-wrap:anywhere}
+.employee-result span {font-size:.875rem;color:var(--muted);margin-top:4px}
+.employee-result[aria-pressed="true"] {border-color:var(--blue);background:var(--teal-bg)}
+.employee-selected:empty {display:none}
 .selection-field {margin-top:24px;padding-top:24px;border-top:1px solid var(--line)}
 .field-heading {display:flex;gap:12px;align-items:flex-start;margin-bottom:16px}
 .field-heading>span {display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border-radius:8px;background:var(--navy);color:#fff;font-size:.75rem}

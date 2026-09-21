@@ -1,0 +1,95 @@
+{{- if .Values.database.enabled }}
+{{- $secret := required "database.existingSecret is required" .Values.database.existingSecret }}
+{{- $_ := required "backend.existingSecret is required when the database is enabled" .Values.backend.existingSecret }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "otb.fullname" . }}-database
+  labels:
+    {{- include "otb.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: database
+  ports:
+    - { name: postgres, port: 5432, targetPort: 5432 }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "otb.fullname" . }}-database
+  labels:
+    {{- include "otb.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "otb.fullname" . }}-database
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: database
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: database
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
+        seccompProfile: { type: RuntimeDefault }
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: postgres
+          image: {{ .Values.database.image | quote }}
+          imagePullPolicy: {{ .Values.database.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          env:
+            - { name: POSTGRES_DB, value: oneteambooster }
+            - { name: POSTGRES_USER, value: otb }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret | quote }}
+                  key: {{ .Values.database.passwordKey | quote }}
+          ports:
+            - { name: postgres, containerPort: 5432 }
+          startupProbe:
+            exec: { command: [pg_isready, -U, otb, -d, oneteambooster] }
+            periodSeconds: 2
+            failureThreshold: 60
+          readinessProbe:
+            exec: { command: [pg_isready, -U, otb, -d, oneteambooster] }
+          livenessProbe:
+            exec: { command: [pg_isready, -U, otb, -d, oneteambooster] }
+          resources:
+            {{- toYaml .Values.database.resources | nindent 12 }}
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+            - { name: run, mountPath: /var/run/postgresql }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: run
+          emptyDir: { sizeLimit: 16Mi }
+        - name: tmp
+          emptyDir: { sizeLimit: 64Mi }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: {{ .Values.database.storageClass | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.database.size | quote }}
+{{- end }}

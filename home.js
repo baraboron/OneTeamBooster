@@ -2,7 +2,7 @@
   const el=id=>document.getElementById(id);
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let currentMetrics,previous,signature='',selectedKey,sequence=0,variant=Math.floor(Math.random()*96),action='compose';
-  let openCompose=()=>{},navigate=()=>{},sample=false,client,transport={status:'disconnected',snapshot:null};
+  let openCompose=()=>{},navigate=()=>{},sample=false,testMode=false,client,transport={status:'disconnected',snapshot:null};
   function drawMotivation(){
     if(!currentMetrics)return;
     const keys=HomeDomain.eligible(currentMetrics);
@@ -34,12 +34,14 @@
     const snapshot=transport.snapshot,rows=sample?sampleRows():snapshot?.leaders;
     const badge=el('leaderboard-status'),note=el('leaderboard-note'),list=el('leaderboard-list');
     const labels={disconnected:'연결 대기',loading:'갱신 중',error:'연결 오류',stale:'지난 집계',current:transport.streamConnected?'실시간 연결':'자동 갱신'};
-    badge.textContent=sample?'시연 데이터':labels[transport.status];
+    badge.textContent=testMode?(transport.status==='error'?'연결 오류':'테스트 집계'):sample?'시연 데이터':labels[transport.status];
     badge.dataset.state=sample?'sample':transport.status;
     el('leaderboard-sample').textContent=sample?'전사 순위로 돌아가기':'시연 순위 보기';
-    el('leaderboard-refresh').hidden=sample||!client?.url;
+    el('leaderboard-refresh').hidden=testMode||sample||!client?.url;
+    el('leaderboard-sample').hidden=testMode;
     el('leaderboard-refresh').disabled=transport.status==='loading';
-    if(sample)note.textContent='전사 순위가 아닙니다. 가상 점수와 내 로컬 점수로 계산하며, 내 점수가 변하면 즉시 다시 정렬됩니다.';
+    if(testMode)note.textContent=transport.error||('테스트 기록만 집계합니다. 실제 전사 순위가 아닙니다.'+(snapshot?' · '+new Date(snapshot.asOf).toLocaleString('ko-KR')+' 집계':''));
+    else if(sample)note.textContent='전사 순위가 아닙니다. 가상 점수와 내 로컬 점수로 계산하며, 내 점수가 변하면 즉시 다시 정렬됩니다.';
     else if(snapshot){
       const time=new Date(snapshot.asOf).toLocaleString('ko-KR');
       const interval=Math.round((client?.refreshMs||15000)/1000);
@@ -47,7 +49,7 @@
     }else note.textContent=transport.status==='error'?(transport.error||'전사 순위를 불러오지 못했습니다.'):'전사 포인트 데이터 연결 후 TOP 10을 표시합니다. 개인 로컬 기록으로 전사 순위를 만들지 않습니다.';
     if(rows){
       list.innerHTML=rows.length?rows.map(row=>'<li class="leaderboard-row"><span class="rank-medal rank-'+row.rank+'">'+row.rank+'<small>위</small></span><div><b>'+esc(row.displayName)+'</b><small>'+esc(row.groupName||'')+'</small></div><strong>'+row.points.toLocaleString('ko-KR')+'<small>P</small></strong></li>').join(''):'<li class="empty">해당 집계 기간의 포인트 기록이 없습니다.</li>';
-    }else list.innerHTML=Array.from({length:10},(_,index)=>index+1).map(rank=>'<li class="leaderboard-row rank-waiting"><span class="rank-medal">'+rank+'<small>위</small></span><div><b>집계 연결 대기</b><small>전사 포인트 기준</small></div><strong>—</strong></li>').join('');
+    }else list.innerHTML=testMode?'<li class="empty">테스트 사용자를 선택하면 포인트 집계를 표시합니다.</li>':Array.from({length:10},(_,index)=>index+1).map(rank=>'<li class="leaderboard-row rank-waiting"><span class="rank-medal">'+rank+'<small>위</small></span><div><b>집계 연결 대기</b><small>전사 포인트 기준</small></div><strong>—</strong></li>').join('');
   }
   function sameOriginUrl(value){
     if(!value)return '';
@@ -56,13 +58,19 @@
     return url.href;
   }
   window.HomeWorkspace={
+    setTestMode(enabled){if(testMode===enabled)return;testMode=enabled;if(enabled){sample=false;client?.stop();transport={status:'disconnected',snapshot:null};}drawRanking();},
+    setTestRanking(snapshot,error){
+      if(!testMode)return;
+      if(snapshot&&(snapshot.mode!=='test'||snapshot.scope!=='test')){snapshot=null;error='테스트 집계 형식을 확인할 수 없습니다.';}
+      transport={status:error?'error':'current',snapshot,error};drawRanking();
+    },
     sync(data){
       currentMetrics=HomeDomain.metrics(data);
       const next=JSON.stringify(currentMetrics);
       if(next!==signature){
         selectedKey=HomeDomain.preferred(currentMetrics,previous);sequence=0;variant=(variant+1)%96;
         previous={...currentMetrics};signature=next;
-        if(client?.url&&!document.hidden)client.refresh();
+        if(!testMode&&client?.url&&!document.hidden)client.refresh();
       }
       drawMotivation();drawRanking();
     },

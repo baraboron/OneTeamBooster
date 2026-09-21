@@ -1,0 +1,17 @@
+{
+  "name": "oneteambooster-backend",
+  "version": "0.2.0",
+  "private": true,
+  "description": "HR directory, PostgreSQL collaboration ledger and preview API; login deferred",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test server.test.js hr-client.test.js domain.test.js directory.test.js"
+  },
+  "dependencies": {
+    "pg": "8.23.0"
+  }
+}

@@ -1,5 +1,31 @@
 # OneTeam Booster 개발 가이드
 
+## 지속 활용할 원격 PC
+
+- 사용자는 이 PC의 PowerShell에서 원격 PC에 접속하여 지속 활용하도록 요청했다.
+- 접속 대상: `192.168.20.72`, 계정: `admin`, 방식: PowerShell에서 OpenSSH 클라이언트 실행(SSH 22번).
+- 2026-09-18 실제 로그인 확인: 원격 호스트 `web-j3-w01`, `whoami` 결과 `admin`.
+- 비밀번호는 현재 Windows 사용자의 **Windows 자격 증명 관리자 / 일반 자격 증명**에 저장되어 있다. 항목 이름은 `OneTeamBooster/remote/192.168.20.72/admin`이다.
+- 비밀번호를 문서, 메모리, 저장소, 명령줄 인수, 출력에 기록하지 않는다. 저장한 비밀번호는 SSH 하위 프로세스에만 전달한다.
+- 저장 정보 확인: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Get-RemotePcCredential.ps1 -Verify`.
+- 원격 명령 실행: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Invoke-RemotePc.ps1 -RemoteCommand "hostname"`. `RemoteCommand`에 사용자가 요청한 작업의 명령을 넣는다. 이 스크립트는 SSH를 통한 명령 실행용이며 대화형 터미널 도구가 아니다.
+- `Invoke-RemotePc.ps1`은 자격 증명을 읽고 비밀번호 없는 임시 SSH askpass 실행 파일을 만든 뒤 종료 시 제거한다. `Get-RemotePcCredential.ps1 -SshAskPass`를 단독으로 실행하거나 출력을 수집하지 않는다.
+- 저장 및 실행은 자격 증명을 저장한 동일 Windows 사용자 컨텍스트가 필요하다. Codex 샌드박스 안에서는 자격 증명 조회와 네트워크 연결이 실패했다. 필요한 경우 승인된 샌드박스 외부 실행을 사용하며, 샌드박스 실패를 원격 PC 장애로 단정하지 않는다.
+- `-ExecutionPolicy Bypass`는 해당 PowerShell 프로세스에만 적용하며 시스템 실행 정책을 변경하지 않는다. SSH 호스트 키가 변경되면 검증을 끄거나 기존 키를 임의로 삭제하지 않는다.
+- 2026-09-18 확인 시 WinRM(5985/5986)과 RDP(3389)는 연결을 거부했다. `Enter-PSSession` 연결은 검증하지 않았으며, 현재 검증된 경로는 SSH다. 연결 상태는 사용할 때 다시 확인한다.
+- 접속정보 저장은 원격 PC의 임의 변경·삭제·배포에 대한 포괄적 승인이 아니다. 실제 작업은 사용자가 요청한 범위에서 진행한다.
+
+## K3s 배포 작업 안내
+
+- 배포 관련 작업은 `deploy/README.md`와 `deploy/helm/oneteambooster`를 먼저 확인한다. 원격 K3s는 3노드이며 Ingress class는 `nginx`, Harbor는 `wonix-ops.ips.co.kr`이다(2026-09-18 확인).
+- 현재 시연 배포: `http://192.168.20.72:30081`, namespace `oneteambooster-preview`, Helm release `otb`, 값 파일 `deploy/values-preview.yaml`. 원격 소스는 `/home/admin/tmp/otb-fetch-fix-20260921`에 있다. 2026-09-21 사용자 승인으로 Helm 리비전 4에 fetch 호출 오류 수정을 배포했다. 프런트엔드 이미지는 `fetch-fix-20260921-v1`, 백엔드는 `test-users-20260921-v1`이다.
+- `backend/`에 인사 동기화, PostgreSQL 저장, 칭찬·답장·중복 방지 포인트 원장, 담당 부서별 리더 조회, 전사 순위 로직이 구현되어 있다. 정식 로그인은 보류했으나 사용자가 송재현·김영훈 선택 방식의 테스트 모드와 배포를 명시적으로 승인했다. 두 테스트 사용자만 `X-OTB-Test-User`로 선택하며 HR 검색·칭찬·답장·포인트는 서버 `otb_preview` 스키마에 저장한다. 실제 인증이나 운영 원장으로 취급하지 않는다. 리더 조회는 계속 403이며 이름/직책에서 권한을 추정하지 않는다.
+- HR API 키는 Windows 자격 증명 관리자 `OneTeamBooster/hr-api/ax.ips.co.kr`와 배포 namespace의 `otb-runtime` Secret에 있다. 코드에서는 `DATA_API_KEY` 환경변수만 참조한다. 키나 실제 직원 목록을 로그·이미지·문서에 넣지 않는다. 사용자가 승인한 임직원 검색/테스트 사용자 화면에서 필요한 정보만 표시하고 인사 데이터는 LocalStorage에 저장하지 않는다. 인사 API 응답 필드는 원래 대문자 명칭을 유지한다.
+- DB 비밀번호는 같은 Secret의 `PGPASSWORD`와 Windows 자격 증명 관리자 `OneTeamBooster/postgres/oneteambooster-preview`에 저장되어 있다. 최초 Secret 생성 스크립트는 기존 Secret을 교체하지 않으며 비밀번호 회전 목적으로 재실행하지 않는다.
+- Harbor 인증서 만료 때문에 현재 프리뷰는 노드 `web-j3-w01`에 직접 적재한 이미지와 `imagePullPolicy: Never`를 사용한다. 단일 노드 시연이며 DB PVC는 local-path 2Gi다. 기존 Harbor/DNS/TLS/다른 앱은 변경하지 않았다.
+- `Invoke-RemotePc.ps1 -UploadFile <로컬파일> -DestinationPath <원격절대경로>`로 검증용 자료를 복사할 수 있다. 비밀값이나 접속 스크립트를 앱 이미지/소스 묶음에 포함하지 않는다.
+- 백엔드 변경 시 `npm --prefix backend test`, DB 변경 시 임시 PostgreSQL을 사용하는 `bash deploy/verify-business.sh`, 배포 변경 시 `VALIDATE_CLUSTER=1 bash deploy/verify.sh`로 검증한다. 검증 스크립트는 임시 컨테이너와 클러스터 dry-run을 사용한다. 실제 설치/업데이트는 `deploy/README.md`를 따른다.
+
 ## 제품 정의
 
 OneTeam Booster(OTB)는 원익IPS의 OneTeam 조직문화를 강화하는 AI 기반 협업격려 도구다. 업무 진행상황을 관리하거나 감시하는 현황판이 아니다.

@@ -1,0 +1,59 @@
+nameOverride: ""
+imagePullSecrets: []
+
+frontend:
+  replicas: 1
+  service:
+    type: ClusterIP
+    nodePort: null
+  image:
+    repository: oneteambooster/frontend
+    tag: "0.2.0"
+    digest: ""
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 50m, memory: 32Mi }
+    limits: { cpu: 250m, memory: 128Mi }
+
+backend:
+  replicas: 1
+  image:
+    repository: oneteambooster/backend
+    tag: "0.2.0"
+    digest: ""
+    pullPolicy: IfNotPresent
+  # Optional name only. Never place secret values in this chart.
+  existingSecret: ""
+  campaignId: "2026-OneTeam"
+  # Explicitly enable only for an approved internal directory preview.
+  previewEmployeeSearch: false
+  testUserMode: false
+  previewOrigin: ""
+  dataApiUrl: "http://ax.ips.co.kr/api/gateway/common/hr-user"
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+
+database:
+  enabled: false
+  image: postgres:17-alpine@sha256:f02121de6f74d30d8a94cd1d9584125e2178d7e6c377d8130112d4e52d867995
+  imagePullPolicy: IfNotPresent
+  existingSecret: ""
+  passwordKey: PGPASSWORD
+  storageClass: local-path
+  size: 2Gi
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 1000m, memory: 512Mi }
+
+# Defaults expose no ingress, NodePort or LoadBalancer.
+ingress:
+  enabled: false
+  className: nginx
+  host: ""
+  annotations: {}
+  tlsSecretName: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

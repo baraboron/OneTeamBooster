@@ -1,4 +1,10 @@
 # Logs
+# Local TLS certificates and private keys must never enter Git or build context.
+NginX/
+*.key
+*.pfx
+*.p12
+
 logs
 *.log
 npm-debug.log*
@@ -144,3 +150,7 @@ vite.config.ts.timestamp-*
 
 # Local inspection artifacts
 tmp/
+
+# Local deployment values and packaged charts
+deploy/values.local.yaml
+artifacts/

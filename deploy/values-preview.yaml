@@ -1,0 +1,26 @@
+# Internal test preview: selected test users, separate otb_preview schema, no real login.
+frontend:
+  image:
+    repository: docker.io/oneteambooster/frontend
+    tag: fetch-fix-20260921-v1
+    pullPolicy: Never
+  service:
+    type: NodePort
+    nodePort: 30081
+backend:
+  image:
+    repository: docker.io/oneteambooster/backend
+    tag: test-users-20260921-v1
+    pullPolicy: Never
+  existingSecret: otb-runtime
+  testUserMode: true
+  previewOrigin: "http://192.168.20.72:30081"
+database:
+  enabled: true
+  image: docker.io/library/postgres:17-alpine
+  imagePullPolicy: Never
+  existingSecret: otb-runtime
+nodeSelector:
+  kubernetes.io/hostname: web-j3-w01
+ingress:
+  enabled: false

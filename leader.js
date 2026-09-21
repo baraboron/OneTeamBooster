@@ -47,6 +47,7 @@
   }
   function render() {
     const host = el('insight');
+    if(window.LeaderWorkspace?.testMode){host.innerHTML='<p class="empty">테스트 사용자에게 리더 권한을 부여하지 않았습니다.</p>';return;}
     if (session.role !== 'leader') { host.innerHTML = '<p class="empty">리더 전용 페이지입니다.</p>'; return; }
     const all = records(), incoming = allowed();
     const departments = topCollaboratingDepartments(incoming);
@@ -66,7 +67,8 @@
     return `<article class="leader-record-card"><div class="leader-card-heading"><b>${esc(r.from)} <span>→</span> ${esc(recipient)}</b><small>${esc(r.time)}</small></div><div class="meta-tags">${[r.mission,r.boost,r.impact].map(v=>`<span>${esc(v)}</span>`).join('')}</div><blockquote>${esc(r.message)}</blockquote></article>`;
   }
   window.LeaderWorkspace = {
-    isLeader:()=>session.role==='leader',
+    testMode:false,
+    isLeader:()=>!window.LeaderWorkspace.testMode&&session.role==='leader',
     sync(value){appData=value;render();},
     init(value){appData=value;
       el('demo-role').onchange=e=>setRole(e.target.value);

@@ -2,7 +2,7 @@
 (function(root){
   const domain=typeof module!=='undefined'&&module.exports?require('./home-domain.js'):root.HomeDomain;
   class LeaderboardClient {
-    constructor({url,eventsUrl='',onChange=()=>{},fetchFn=root.fetch,EventSourceClass=root.EventSource,refreshMs=15000}){
+    constructor({url,eventsUrl='',onChange=()=>{},fetchFn=(...args)=>root.fetch(...args),EventSourceClass=root.EventSource,refreshMs=15000}){
       this.url=url;this.eventsUrl=eventsUrl;this.onChange=onChange;this.fetchFn=fetchFn;this.EventSourceClass=EventSourceClass;
       this.refreshMs=Math.max(5000,Number(refreshMs)||15000);
       this.state={status:'disconnected',snapshot:null,streamConnected:false};this.generation=0;
