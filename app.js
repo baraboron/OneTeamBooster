@@ -66,6 +66,7 @@ function normalizeRanks(group){[...group.querySelectorAll('.selected')].sort((a,
 function selectChoices(name,values){const group=$('[data-name="'+name+'"]');if(!group)return;[...group.children].forEach(button=>{const rank=values.indexOf(button.dataset.value||button.textContent.trim());button.classList.toggle('selected',rank>=0);if(group.dataset.mode==='rank'){if(rank>=0)button.dataset.rank=String(rank+1);else delete button.dataset.rank;}});normalizeRanks(group);updateSelectionCounter(group);}
 function selectChoice(name,value){selectChoices(name,[value]);}
 const apiClient=window.OTBApiClient?new window.OTBApiClient():null;
+let draftGeneration=null;
 const remoteWorkspace=window.OTBTestWorkspace?.create({api:apiClient,onData:value=>{data=value;render();},onState:renderTestSession,onRanking:(value,error)=>HomeWorkspace.setTestRanking(value,error)});
 function renderTestSession(state){
  $('#test-user-panel').hidden=state.checked&&!state.enabled;
@@ -77,6 +78,7 @@ function renderTestSession(state){
  $('#test-user').value=state.employee?.USER_ID||'';
  $('#test-mode-notice').hidden=!state.enabled;
  $('#recipient-source-field').hidden=state.enabled;
+ $('#draft-guide').textContent=state.enabled?'업무명·관계·선택 항목을 OpenAI에 보내 칭찬 초안을 만듭니다. 업무명에는 기밀이나 개인정보를 넣지 마세요. 직원 이름·부서·이메일은 보내지 않으며, 초안은 확인하고 수정한 뒤 전송합니다.':'함께한 업무와 고마웠던 점, 도움이 된 결과를 골라주세요. 현재는 템플릿 기반 시연입니다. 초안을 확인하고 수정한 뒤 저장합니다.';
  if(state.enabled){
    $('#demo-role').hidden=true;$('#demo-role-label').hidden=true;$('#local-demo-actions').hidden=true;
    LeaderWorkspace.testMode=true;$('[data-view="insight"]').hidden=true;
@@ -102,15 +104,58 @@ function setRecipientSource(source){
  if(actual)employeePicker?.open();
 }
 $('#recipient-source').addEventListener('change',event=>setRecipientSource(event.target.value));
-function openComposer(reuse,isDemo=false,source='demo'){if(remoteWorkspace?.getState().enabled){if(!remoteWorkspace.getState().ready||remoteWorkspace.getState().busy){toast('테스트 사용자를 선택하고 서버 연결을 확인해 주세요.');return;}source='directory';isDemo=false;}if(source!=='directory'&&!isDemo&&remainingDailyBoosters()===0){toast('오늘은 부스터를 3회 모두 보냈어요. 내일 다시 보낼 수 있습니다.');return;}$('#modal').classList.add('open');$('#booster-form').classList.remove('hidden');$('#message-preview').classList.add('hidden');$('#booster-form').dataset.demo=String(isDemo);setRecipientSource(source);if(reuse){$('#project-name').value=reuse.projectName||'';if(!remoteWorkspace?.getState().enabled)$('#recipient').value=reuse.recipient;selectChoice('partner',reuse.partner);['mission','boost','impact'].forEach(name=>selectChoices(name,storedSelections(reuse,name)));}else if(isDemo){$('#recipient').value='시연 동료 '+(data.sentBoosters.filter(item=>item.isDemo).length+1);}$('#project-name').focus();}
+function openComposer(reuse,isDemo=false,source='demo'){cancelDraftGeneration();if(remoteWorkspace?.getState().enabled){if(!remoteWorkspace.getState().ready||remoteWorkspace.getState().busy){toast('테스트 사용자를 선택하고 서버 연결을 확인해 주세요.');return;}source='directory';isDemo=false;}if(source!=='directory'&&!isDemo&&remainingDailyBoosters()===0){toast('오늘은 부스터를 3회 모두 보냈어요. 내일 다시 보낼 수 있습니다.');return;}$('#modal').classList.add('open');$('#booster-form').classList.remove('hidden');$('#message-preview').classList.add('hidden');$('#booster-form').dataset.demo=String(isDemo);setRecipientSource(source);if(reuse){$('#project-name').value=reuse.projectName||'';if(!remoteWorkspace?.getState().enabled)$('#recipient').value=reuse.recipient;selectChoice('partner',reuse.partner);['mission','boost','impact'].forEach(name=>selectChoices(name,storedSelections(reuse,name)));}else if(isDemo){$('#recipient').value='시연 동료 '+(data.sentBoosters.filter(item=>item.isDemo).length+1);}$('#project-name').focus();}
 $('#open-employee-search').onclick=()=>openComposer(null,false,'directory');
-function closeModal(id){$('#'+id).classList.remove('open');if(id==='modal'){employeePicker?.reset();if($('#recipient-source').value==='directory'){$('#recipient').value='';$('#message-text').value='';delete $('#message-preview').dataset.values;}}}
+function closeModal(id){$('#'+id).classList.remove('open');if(id==='modal'){cancelDraftGeneration();employeePicker?.reset();if($('#recipient-source').value==='directory'){$('#recipient').value='';$('#message-text').value='';delete $('#message-preview').dataset.values;}}}
 function draftMessage(values){return PraiseCopy.draft(values);}
 $$('.nav-link').forEach(button=>button.addEventListener('click',()=>showView(button.dataset.view)));$$('[data-view-target]').forEach(button=>button.addEventListener('click',()=>showView(button.dataset.viewTarget)));
 $('#open-composer').onclick=()=>openComposer();$('#open-demo-composer').onclick=()=>openComposer(null,true);$('#add-demo-received').onclick=()=>{data.received.unshift({id:`demo-r${Date.now()}`,from:'시연 동료',team:'시연 그룹',partner:'동료',mission:'문서 작성',boost:'정보 공유',impact:'팀워크 강화',message:'[시연] 함께 정리해 주신 덕분에 다음 업무를 빠르게 이어갈 수 있었습니다. 고맙습니다!',time:'방금 전',replied:false,isDemo:true});save();render();showView('received');toast('시연용 받은 부스터를 추가했어요. 감사 답장을 골라 보내보세요.');};$('#close-composer').onclick=()=>closeModal('modal');$('#modal').addEventListener('click',event=>{if(event.target===event.currentTarget)closeModal('modal');});
 $$('[data-close]').forEach(button=>button.addEventListener('click',()=>closeModal(button.dataset.close)));['report-modal','leader-modal','reply-modal'].forEach(id=>$(`#${id}`).addEventListener('click',event=>{if(event.target===event.currentTarget)closeModal(event.currentTarget.id);}));
 $$('.choice-group').forEach(group=>group.addEventListener('click',event=>{const button=event.target.closest('button');if(!button)return;const mode=group.dataset.mode||'single',selectedButtons=[...group.querySelectorAll('.selected')];if(mode==='single'){[...group.children].forEach(item=>item.classList.toggle('selected',item===button));}else if(mode==='multiple'){if(button.classList.contains('selected'))button.classList.remove('selected');else if(selectedButtons.length<3)button.classList.add('selected');else{toast('Mission Record는 최대 3개까지 선택할 수 있습니다.');return;}}else if(mode==='rank'){if(button.classList.contains('selected')){button.classList.remove('selected');delete button.dataset.rank;}else if(selectedButtons.length<3){button.classList.add('selected');button.dataset.rank=String(selectedButtons.length+1);}else{toast('핵심 항목은 최대 3개까지 순위를 정할 수 있습니다.');return;}normalizeRanks(group);}updateSelectionCounter(group);}));
-$('#booster-form').addEventListener('submit',event=>{event.preventDefault();const missions=selectionList('mission'),boosts=selectionList('boost'),impacts=selectionList('impact');if(!missions.length||!boosts.length||!impacts.length){toast('Mission, Boost Point, Impact를 각각 선택해 주세요.');return;}const values={projectName:$('#project-name').value.trim(),recipient:$('#recipient').value.trim(),partner:selected('partner'),mission:missions.join(' · '),boost:boosts[0],impact:impacts[0],missions,boosts,impacts,directoryDraft:$('#recipient-source').value==='directory',recipientId:employeePicker?.getSelected()?.USER_ID,isDemo:$('#booster-form').dataset.demo==='true'};if(!values.projectName){toast('프로젝트 또는 업무명을 입력해 주세요.');$('#project-name').focus();return;}if(values.directoryDraft&&!employeePicker?.getSelected()){toast('검색 결과에서 임직원을 선택해 주세요.');return;}if(!values.recipient){toast('부스터를 받을 동료 이름을 입력해 주세요.');return;}$('#send-booster').disabled=values.directoryDraft&&!remoteWorkspace?.getState().enabled;$('#message-preview-note').textContent=remoteWorkspace?.getState().enabled?'테스트 전송입니다. 정식 운영 포인트에는 반영되지 않습니다.':values.directoryDraft?'임직원 검색 초안입니다. 실제 전송은 로그인 연결 후 사용할 수 있습니다.':'시연 초안입니다. 저장해도 실제 직원에게 전달되지 않습니다.';const limitMessage=sendLimitMessage(values);if(limitMessage){toast(limitMessage);return;}$('#message-text').value=draftMessage(values);if(remoteWorkspace?.getState().enabled)values.requestId=createRequestId();$('#message-preview').dataset.values=JSON.stringify(values);$('#booster-form').classList.add('hidden');$('#message-preview').classList.remove('hidden');});
+function setDraftStatus(message){$('#draft-status').textContent=message;$('#draft-status').hidden=!message;}
+function finishDraftGeneration(request){
+ if(draftGeneration!==request)return;
+ draftGeneration=null;request.controls.forEach(([control,disabled])=>{control.disabled=disabled;});
+ $('#generate-draft').disabled=false;$('#generate-draft').textContent='메시지 초안 만들기 →';
+ $('#booster-form').setAttribute('aria-busy','false');
+}
+function cancelDraftGeneration(){
+ if(draftGeneration){const request=draftGeneration;request.controller.abort();finishDraftGeneration(request);}
+ setDraftStatus('');
+}
+$('#booster-form').addEventListener('submit',async event=>{
+ event.preventDefault();if(draftGeneration)return;
+ const missions=selectionList('mission'),boosts=selectionList('boost'),impacts=selectionList('impact');
+ if(!missions.length||!boosts.length||!impacts.length){toast('Mission, Boost Point, Impact를 각각 선택해 주세요.');return;}
+ const values={projectName:$('#project-name').value.trim(),recipient:$('#recipient').value.trim(),partner:selected('partner'),mission:missions.join(' · '),boost:boosts[0],impact:impacts[0],missions,boosts,impacts,directoryDraft:$('#recipient-source').value==='directory',recipientId:employeePicker?.getSelected()?.USER_ID,isDemo:$('#booster-form').dataset.demo==='true'};
+ if(!values.projectName){toast('프로젝트 또는 업무명을 입력해 주세요.');$('#project-name').focus();return;}
+ if(values.directoryDraft&&!employeePicker?.getSelected()){toast('검색 결과에서 임직원을 선택해 주세요.');return;}
+ if(!values.recipient){toast('부스터를 받을 동료 이름을 입력해 주세요.');return;}
+ const limitMessage=sendLimitMessage(values);if(limitMessage){toast(limitMessage);return;}
+ const live=remoteWorkspace?.getState().enabled;
+ let message;
+ if(live){
+   if(!remoteWorkspace.getState().ready||remoteWorkspace.getState().busy){toast('테스트 사용자와 서버 연결 상태를 확인해 주세요.');return;}
+   const request={controller:new AbortController(),controls:[...$('#booster-form').querySelectorAll('input,select,button,textarea')].map(control=>[control,control.disabled])};
+   draftGeneration=request;request.controls.forEach(([control])=>{control.disabled=true;});
+   $('#generate-draft').disabled=true;$('#generate-draft').textContent='칭찬 문장 작성 중…';
+   $('#booster-form').setAttribute('aria-busy','true');setDraftStatus('선택한 내용을 바탕으로 칭찬 문장을 작성하고 있어요.');
+   try{
+     const result=await apiClient.draft(values,{signal:request.controller.signal});
+     if(draftGeneration!==request)return;
+     if(result.source!=='openai'||typeof result.message!=='string'||!result.message.trim())throw new Error('INVALID_DRAFT');
+     message=values.recipient+'님, '+result.message.trim();values.draftSource='openai';setDraftStatus('');
+   }catch(error){
+     if(draftGeneration===request&&error.name!=='AbortError')setDraftStatus(error.code?error.message:'AI 연결이 원활하지 않습니다. 다시 시도해 주세요.');
+     return;
+   }finally{finishDraftGeneration(request);}
+ }else{message=draftMessage(values);setDraftStatus('');}
+ $('#send-booster').disabled=values.directoryDraft&&!live;
+ $('#message-preview-note').textContent=live?'AI가 만든 초안입니다. 업무 내용과 표현을 확인하고 수정한 뒤 전송하세요. 칭찬과 포인트는 테스트용으로 저장됩니다.':values.directoryDraft?'임직원 검색 초안입니다. 실제 전송은 로그인 연결 후 사용할 수 있습니다.':'템플릿 시연 초안입니다. 저장해도 실제 직원에게 전달되지 않습니다.';
+ $('#message-text').value=message;if(live)values.requestId=createRequestId();
+ $('#message-preview').dataset.values=JSON.stringify(values);
+ $('#booster-form').classList.add('hidden');$('#message-preview').classList.remove('hidden');$('#message-text').focus();
+});
 $('#back-to-form').onclick=()=>{$('#booster-form').classList.remove('hidden');$('#message-preview').classList.add('hidden');};
 $('#send-booster').onclick=async()=>{const values=JSON.parse($('#message-preview').dataset.values),limitMessage=sendLimitMessage(values);if(remoteWorkspace?.getState().enabled){if(limitMessage){toast(limitMessage);return;}try{await remoteWorkspace.send({...values,message:$('#message-text').value},values.requestId);closeModal('modal');toast('테스트 칭찬을 저장했습니다. 발신 10P·수신 20P가 반영됩니다.');}catch(error){toast(error.message);}return;}if(values.directoryDraft){toast('실제 칭찬 전송은 로그인 연결 후 사용할 수 있습니다.');return;}if(!values.projectName){toast('프로젝트 또는 업무명을 입력해 주세요.');return;}if(limitMessage){toast(limitMessage);return;}data.sentBoosters.unshift({id:`s${Date.now()}`,...values,message:$('#message-text').value,time:'방금 전',sentAt:Date.now()});data.points+=10;save();render();closeModal('modal');$('#booster-form').reset();selectChoice('partner','동료');selectChoice('mission','문서 작성');selectChoice('boost','정보 공유');selectChoice('impact','품질 향상');toast('칭찬을 보냈어요. 내 포인트에 10P를 더했어요.');};
 $('#received-list').addEventListener('click',event=>{const id=event.target.dataset.reply;if(id){const item=data.received.find(value=>value.id===id);if(item&&!item.replied){$('#reply-booster-id').value=id;$('#reply-template').value='따뜻한 칭찬 덕분에 힘이 났어요. 함께해 주셔서 고맙습니다.';$('#reply-modal').classList.add('open');}}if(event.target.classList.contains('report-from-card'))$('#report-modal').classList.add('open');});

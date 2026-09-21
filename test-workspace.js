@@ -1,7 +1,7 @@
 (function(root){
   const empty=()=>({points:0,received:[],sentBoosters:[],remainingToday:3,weeklyRecipientIds:[]});
   function create({api,onData=()=>{},onState=()=>{},onRanking=()=>{},storage=root.sessionStorage}={}){
-    let state={checked:false,enabled:false,ready:false,busy:false,employee:null,users:[],error:''},version=0,timer,refreshing=false;
+    let state={checked:false,enabled:false,aiEnabled:false,ready:false,busy:false,employee:null,users:[],error:''},version=0,timer,refreshing=false;
     const notify=()=>onState({...state});
     const remember=id=>{try{storage?.setItem('otb-test-user',id);}catch{}};
     function stored(){try{return storage?.getItem('otb-test-user')||'';}catch{return '';}}
@@ -27,7 +27,7 @@
       clearInterval(timer);
       notify();
       try{
-        const system=await api.system();state.checked=true;state.enabled=system.testUserMode===true;
+        const system=await api.system();state.checked=true;state.enabled=system.testUserMode===true;state.aiEnabled=system.capabilities?.aiGeneration===true;
         if(!state.enabled){notify();return;}
         onData(empty());notify();
         const users=await api.testUsers();if(users.mode!=='test'||!Array.isArray(users.data))throw new Error('테스트 사용자를 불러오지 못했습니다.');

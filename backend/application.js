@@ -18,7 +18,7 @@ export async function readJson(req) {
   } catch { throw new AppError(400,'INVALID_JSON'); }
 }
 
-export function createApplication({ pool, campaign = '2026-OneTeam', authorize, previewEmployeeSearch = false, testMode = false, previewOrigin = '' }) {
+export function createApplication({ pool, campaign = '2026-OneTeam', authorize, previewEmployeeSearch = false, testMode = false, previewOrigin = '', draftGenerator }) {
   if(testMode) {
     if(authorize || !/^https?:\/\//.test(previewOrigin) || new URL(previewOrigin).origin!==previewOrigin) throw new Error('INVALID_TEST_CONFIGURATION');
     campaign='TEST-2026-OneTeam';
@@ -29,7 +29,7 @@ export function createApplication({ pool, campaign = '2026-OneTeam', authorize, 
     const { rows: [state] }=await pool.query("SELECT synced_at > now()-interval '24 hours' AS fresh FROM directory_state WHERE id=1");
     return state?.fresh === true;
   }
-  return { ready, previewEmployeeSearch, testMode, async handle(req, path, send) {
+  return { ready, previewEmployeeSearch, testMode, aiGeneration:Boolean(draftGenerator?.enabled), async handle(req, path, send) {
     const url = new URL(req.url,'http://localhost');
     if(testMode && path==='/api/test-users' && req.method==='GET') {
       if(!await ready()) throw new AppError(503,'DIRECTORY_NOT_READY');
@@ -45,6 +45,10 @@ export function createApplication({ pool, campaign = '2026-OneTeam', authorize, 
     const identity=testMode?await testIdentity(pool,req,previewOrigin):await authorize(req);
     const {rows:[actor]}=await pool.query('SELECT user_id,profile FROM employees WHERE user_id=$1 AND active',[identity.userId]);
     if(!actor)throw new AppError(403,'INACTIVE_EMPLOYEE');
+    if(path==='/api/drafts' && req.method==='POST'){
+      if(!draftGenerator?.enabled)throw new AppError(503,'AI_NOT_CONFIGURED','AI 초안 연결을 준비 중입니다.');
+      return send(200,await draftGenerator.generate(actor.user_id,await readJson(req)));
+    }
     if(path==='/api/me' && req.method==='GET')return send(200,{employee:actor.profile});
     if (req.method === 'GET' && path === '/api/employees') {
       return send(200,await searchEmployees(pool,url.searchParams,actor.user_id));

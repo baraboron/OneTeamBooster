@@ -36,7 +36,7 @@ test('application boots with populated home, contextual encouragement and discon
 
 test('integrated test-user UI searches employees, submits to server and switches records without local writes',async()=>{
  const people=[{USER_ID:'a',USER_NM:'가상 A',DEPT_NM:'가상 부서'},{USER_ID:'b',USER_NM:'가상 B',DEPT_NM:'가상 부서'}];
- let sent=false,observed;
+ let sent=false,observed,draftFailed=true,draftPayload;
  const h=boot({fetchFn:async(path,options)=>{
    const id=options.headers['X-OTB-Test-User'];let body={};
    if(path==='/api/system')body={testUserMode:true};
@@ -44,6 +44,11 @@ test('integrated test-user UI searches employees, submits to server and switches
    else if(path==='/api/departments')body={data:[]};
    else if(path.startsWith('/api/employees?'))body={data:[people[1]],total:1,page:1,hasMore:false};
    else if(path==='/api/leaderboard')body={scope:'test',mode:'test',asOf:new Date().toISOString(),leaders:[]};
+   else if(path==='/api/drafts'){
+     draftPayload=JSON.parse(options.body);
+     if(draftFailed)return {ok:false,status:503,json:async()=>({error:{code:'AI_UNAVAILABLE',message:'다시 시도해 주세요.'}})};
+     body={source:'openai',message:'가상 업무에 필요한 정보를 공유해 주셔서 감사합니다.'};
+   }
    else if(path==='/api/workspace')body={mode:'test',employee:people.find(p=>p.USER_ID===id),points:sent?(id==='a'?10:20):0,remainingToday:sent?2:3,weeklyRecipientIds:[],received:[],sentBoosters:[]};
    else if(path==='/api/boosters'){observed={id,body:JSON.parse(options.body),key:options.headers['Idempotency-Key']};sent=true;body={id:'record'};}
    return {ok:true,json:async()=>body};
@@ -60,9 +65,16 @@ test('integrated test-user UI searches employees, submits to server and switches
  h.node('#employee-results').children[0].children[0].click();assert.equal(h.node('#recipient').value,'가상 B');
  const selected={partner:['동료'],mission:['문서 작성'],boost:['정보 공유','동료 지지'],impact:['품질 향상']};
  h.context.document.querySelectorAll=selector=>{const key=selector.match(/data-name="(\w+)"/);return key?(selected[key[1]]||[]).map((value,i)=>({dataset:{value,rank:String(i+1)}})):[];};
- h.node('#project-name').value='가상 업무';h.node('#booster-form').listeners.submit({preventDefault(){}});
+ h.node('#project-name').value='가상 업무';await h.node('#booster-form').listeners.submit({preventDefault(){}});
+ assert.equal(h.node('#draft-status').hidden,false);assert.equal(h.node('#generate-draft').disabled,false);assert.equal(sent,false);
+ assert.equal(h.node('#booster-form').classList.contains('hidden'),false,'Failed generation must not show a fake AI preview');
+ draftFailed=false;await h.node('#booster-form').listeners.submit({preventDefault(){}});
+ assert.deepEqual(Object.keys(draftPayload).sort(),['boosts','impacts','missions','partner','projectName']);
+ assert.match(h.node('#message-text').value,/가상 B님, 가상 업무/);assert.equal(sent,false,'Generating a draft must not send or award points');
+ h.node('#message-text').value='검토하고 직접 고친 칭찬입니다.';
  assert.equal(h.node('#send-booster').disabled,false);await h.node('#send-booster').onclick();
  assert.equal(observed.id,'a');assert.equal(observed.body.recipientId,'b');assert.equal(observed.body.boosts.length,2);assert.match(observed.key,/^[\da-f-]{36}$/);
+ assert.equal(observed.body.message,'검토하고 직접 고친 칭찬입니다.');
  assert.equal(h.node('#point-total').textContent,10);assert.equal(h.storage.size,0);
  await h.node('#test-user').listeners.change({target:{value:'b'}});assert.equal(h.node('#current-user-name').textContent,'가상 B');assert.equal(h.node('#point-total').textContent,20);
  assert.equal(h.node('#demo-role').hidden,true);assert.equal(h.node('#leaderboard-title').textContent,'테스트 포인트 TOP 10');

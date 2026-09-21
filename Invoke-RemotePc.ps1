@@ -6,6 +6,9 @@ param(
     [string]$RemoteCommand = 'hostname',
     [Parameter(ParameterSetName = 'Command')]
     [switch]$Sudo,
+    # Sends a secret payload over SSH stdin only, never through arguments/files.
+    [Parameter(ParameterSetName = 'Command')]
+    [Security.SecureString]$SecretInput,
     [Parameter(Mandatory, ParameterSetName = 'Upload')]
     [string]$UploadFile,
     [Parameter(Mandatory, ParameterSetName = 'Upload')]
@@ -19,6 +22,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($Sudo -and $SecretInput) { throw 'Sudo and SecretInput cannot share SSH stdin.' }
 $credentialHelper = Join-Path $PSScriptRoot 'Get-RemotePcCredential.ps1'
 $null = & $credentialHelper -Verify
 $askPassFile = Join-Path ([IO.Path]::GetTempPath()) ('otb-ssh-askpass-' + [guid]::NewGuid().ToString('N') + '.cmd')
@@ -48,6 +52,8 @@ try {
                 $quotedCommand = "'" + $RemoteCommand.Replace("'", "'\''") + "'"
                 $sudoCredential.GetNetworkCredential().Password | & ssh.exe -T -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o NumberOfPasswordPrompts=1 'admin@192.168.20.72' ("sudo -S -p '' -- sh -c " + $quotedCommand)
             } finally { $sudoCredential.Password.Dispose() }
+        } elseif ($SecretInput) {
+            [Net.NetworkCredential]::new('', $SecretInput).Password | & ssh.exe -T -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o NumberOfPasswordPrompts=1 'admin@192.168.20.72' $RemoteCommand
         } else {
             & ssh.exe -T -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o NumberOfPasswordPrompts=1 'admin@192.168.20.72' $RemoteCommand
         }

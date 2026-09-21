@@ -34,6 +34,7 @@ pipeline {
       steps {
         sh 'bash deploy/ci/prepare.sh'
         sh 'node --test *.test.js'
+        sh 'node --test supabase/gateway.test.js'
         sh 'npm --prefix backend ci --ignore-scripts && npm --prefix backend test'
         sh 'node deploy/ci/wait-database.mjs && node --test backend/integration.test.js'
         sh '''

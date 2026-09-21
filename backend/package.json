@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "test": "node --test server.test.js hr-client.test.js domain.test.js directory.test.js"
+    "test": "node --test server.test.js hr-client.test.js domain.test.js directory.test.js drafts.test.js"
   },
   "dependencies": {
     "pg": "8.23.0"

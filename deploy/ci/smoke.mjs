@@ -9,6 +9,7 @@ async function json(path, headers) {
 assert.equal((await response('/')).status, 200);
 const system = await json('/api/system');
 assert.equal(system.testUserMode, true); assert.equal(system.productionReady, false);
+assert.equal(system.capabilities.aiGeneration, true);
 assert.equal((await response('/api/employees?q=test')).status, 401);
 const users = await json('/api/test-users');
 assert.equal(users.data.length, 2);
@@ -19,4 +20,4 @@ for (const user of users.data) {
   assert.ok(Array.isArray(employees.data));
   assert.ok(employees.data.every(row => row.USER_ID !== user.USER_ID));
 }
-console.log('PASS: HTTP app, test-user mode, both workspaces, HR search and unauthenticated access restriction.');
+console.log('PASS: HTTP app, AI configuration, test-user mode, both workspaces, HR search and unauthenticated access restriction.');

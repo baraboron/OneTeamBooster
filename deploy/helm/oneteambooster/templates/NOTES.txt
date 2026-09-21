@@ -4,7 +4,8 @@ Login is deferred by user request.
 {{ if .Values.backend.testUserMode }}The selected test users use HR search and the isolated PostgreSQL test ledger.
 This is a test-user switch, not authenticated identity. Leader access is disabled.
 {{ else }}Private business APIs require an authentication adapter.{{ end }}
-AI generation is not connected; draft text still uses the existing templates.
+{{ if .Values.backend.openaiGatewayUrl }}AI drafts use the configured server-to-server gateway. Check /api/system and a synthetic /api/drafts request to verify connectivity.
+{{ else }}AI gateway routing is not configured in this chart.{{ end }}
 
 Check privately (run on the SSH host, then use an SSH tunnel from your PC):
 kubectl -n {{ .Release.Namespace }} port-forward service/{{ include "otb.fullname" . }}-frontend 8080:8080 --address 127.0.0.1

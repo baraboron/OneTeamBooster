@@ -29,6 +29,8 @@ backend:
   previewEmployeeSearch: false
   testUserMode: false
   previewOrigin: ""
+  # Gateway URL is public configuration; its caller token belongs in existingSecret.
+  openaiGatewayUrl: ""
   dataApiUrl: "http://ax.ips.co.kr/api/gateway/common/hr-user"
   resources:
     requests: { cpu: 50m, memory: 64Mi }

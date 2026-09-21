@@ -1,5 +1,9 @@
 # 인사 연동 및 업무 API
 
+## 2026-09-21 AI 게이트웨이 연결
+
+인증된 테스트 사용자의 `POST /api/drafts`를 Supabase `openai-gateway`로 전달한다. `OPENAI_GATEWAY_URL`과 `OTB_GATEWAY_TOKEN`으로 호출하며 OpenAI API 키는 사내 서버에 두지 않는다. 요청은 업무명·관계·선택값만 전달하고 성공 시 `{message,source,model,promptVersion}`을 반환한다. 초안 생성은 원장에 쓰지 않는다. 실제 모델 생성·브라우저 수정 화면·기록 불변까지 배포 검증했다. 상세 설정은 `deploy/OPENAI_GATEWAY.md` 참고. 아래의 AI 미연결·템플릿 관련 설명은 게이트웨이 배포 이전 이력이다.
+
 ## 테스트 사용자 모드
 
 사용자 요청으로 `TEST_USER_MODE=true`, `PREVIEW_ORIGIN=http://192.168.20.72:30081`일 때 송재현·김영훈을 선택해 테스트할 수 있도록 구현했다. 실제 로그인 인증 기능이 아니다. `GET /api/test-users`에서 두 사용자의 `USER_ID`, `USER_NM`, `DEPT_CD`, `DEPT_NM`, `ROLE_NM`을 받고, 나머지 요청에는 선택한 `X-OTB-Test-User` 헤더를 보낸다. 서버는 현재 HR 디렉터리의 두 이름이 각각 유일한 경우만 허용한다.

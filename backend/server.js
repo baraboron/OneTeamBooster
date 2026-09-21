@@ -44,7 +44,7 @@ export function createServer({ application } = {}) {
       }
       return respond(req, res, 200, {
         service: 'oneteambooster-api', version: '0.2.0', mode: application ? 'preview' : 'scaffold',
-        productionReady: false, capabilities,
+        productionReady: false, capabilities:{...capabilities,aiGeneration:application?.aiGeneration===true},
         implemented: { hrDirectory: true, boosterDelivery: true, replies: true, pointsLedger: true, leaderScope: true, companyLeaderboard: true },
         authentication: 'deferred', businessApiAccess: application?.testMode?'test-users-only':'disabled-until-authentication',
         testUserMode: application?.testMode===true,
@@ -85,12 +85,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       const database=await import('./database.js');
       const {createHrClient}=await import('./hr-client.js');
       const {createApplication}=await import('./application.js');
+      const {createDraftGenerator}=await import('./drafts.js');
       const testMode=process.env.TEST_USER_MODE==='true';
       pool=database.createPool(undefined,{testMode});
       await database.migrate(pool,{testMode});
       const hr=createHrClient({apiKey:process.env.DATA_API_KEY,baseUrl:process.env.DATA_API_URL});
       await database.syncDirectory(pool,hr);
-      application=createApplication({pool,campaign:process.env.CAMPAIGN_ID || '2026-OneTeam',previewEmployeeSearch:process.env.PREVIEW_EMPLOYEE_SEARCH==='true',testMode,previewOrigin:process.env.PREVIEW_ORIGIN});
+      application=createApplication({pool,campaign:process.env.CAMPAIGN_ID || '2026-OneTeam',previewEmployeeSearch:process.env.PREVIEW_EMPLOYEE_SEARCH==='true',testMode,previewOrigin:process.env.PREVIEW_ORIGIN,draftGenerator:createDraftGenerator({apiKey:process.env.OPENAI_API_KEY,gatewayUrl:process.env.OPENAI_GATEWAY_URL,gatewayToken:process.env.OTB_GATEWAY_TOKEN,model:process.env.OPENAI_MODEL||'gpt-5.6-luna'})});
       if(testMode) await (await import('./test-users.js')).testUsers(pool);
       let syncing=false;
       syncTimer=setInterval(async()=>{

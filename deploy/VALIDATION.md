@@ -1,3 +1,13 @@
+## 2026-09-21 14:17 KST Supabase 게이트웨이 경유 · 리비전 11
+
+- 사용자 요청으로 사내 앱의 AI 호출을 `사내 /api/drafts → Supabase Edge Function → OpenAI`로 전환했다. 프런트·백엔드 태그 `gateway-20260921-141403`, Harbor 원격 검증 digest 고정, IfNotPresent 적용. 리비전 10에서 기능 배포, 리비전 11에서 오래된 Helm 안내 문구를 갱신했다.
+- 백엔드 digest `sha256:0903a903fdb401546bf519c490000de19e6df4b41802bc73162c05fcecd97ca9`, 프런트엔드 digest `sha256:81e788943baf5e4e83a53f2e212c73018048d7328315d2e47dcb03770dd1406d`.
+- 로컬 루트 32개·백엔드 19개·게이트웨이 6개 통과. 원격 `VALIDATE_CLUSTER=1 bash deploy/verify.sh` 및 `bash deploy/verify-business.sh` 통과: 이미지·Helm·server dry-run·HTTP·PostgreSQL 통합 2개 검증.
+- 실제 백엔드 Pod에서 `OPENAI_GATEWAY_URL`과 호출 토큰 존재, 내부 OpenAI 키 부재를 확인했다. 실제 앱 `/api/drafts`가 HTTP 200 / `source:openai` / `gpt-5.6-luna` / 한국어 102자를 반환했다. 발신·수신 목록과 포인트는 생성 전후 동일했다. 미인증 401, 외부 Origin 403, 리더 조회 403.
+- 브라우저에서 테스트 사용자 선택, 승인된 테스트 수신자 검색, 가상 업무 입력, 생성 중 중복 요청 차단, AI 초안 표시, textarea 수정 가능을 확인했다. 실제 칭찬은 전송하지 않았다.
+- `otb-runtime`의 HR·DB 항목은 유지하고 gateway token만 추가했다. 토큰은 로컬 Credential Manager에서 SSH stdin으로만 전달했다. API 키는 Supabase Secrets에 있으며 원장·인사정보를 외부로 복사하지 않았다.
+- 이 기록은 최초 수동 배포의 검증 결과다. 이후 main 자동 배포는 Jenkins의 해당 커밋 빌드 결과와 Helm 이력에서 확인한다.
+
 ## 2026-09-21 11:35 KST Jenkins 자동 배포 · 최초 성공 리비전 5
 
 - GitHub main 연결 및 push 완료. Jenkins `OneTeamBooster-main` 빌드 #2가 **Started by an SCM change / SUCCESS**로 완료됐다. 검증 커밋 `9dbb3d004d51`, 이미지 태그 `9dbb3d004d51-2`. 수동 Build 호출은 최초 #1에만 사용했다.

@@ -1,0 +1,6 @@
+project_id = "uadmxxpoxaukuwwvfdpr"
+
+[functions.openai-gateway]
+# This server-to-server endpoint verifies OTB_GATEWAY_TOKEN in handler.js.
+# Supabase user JWTs / public keys are deliberately not accepted as identity.
+verify_jwt = false

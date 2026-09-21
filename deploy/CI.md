@@ -1,5 +1,7 @@
 # main 자동 배포
 
+2026-09-21 14:17 KST에 사용자 요청으로 로컬 작업본의 Supabase AI 게이트웨이 연동을 수동 배포했다(Helm 11, `gateway-20260921-141403`). 게이트웨이 설정과 소스를 main 자동 배포 대상에 포함한다. Jenkins는 게이트웨이 단위 테스트와 배포 후 AI 활성화 상태도 검증한다. 검증·이미지·운영 절차는 [OPENAI_GATEWAY.md](OPENAI_GATEWAY.md) 참고.
+
 - Git: https://github.com/baraboron/OneTeamBooster (main)
 - Jenkins: https://wonix-cicd.ips.co.kr/job/OneTeamBooster-main/
 - 서비스: http://192.168.20.72:30081

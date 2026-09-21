@@ -60,6 +60,7 @@ spec:
             - { name: PREVIEW_EMPLOYEE_SEARCH, value: {{ $.Values.backend.previewEmployeeSearch | quote }} }
             - { name: TEST_USER_MODE, value: {{ $.Values.backend.testUserMode | quote }} }
             - { name: PREVIEW_ORIGIN, value: {{ $.Values.backend.previewOrigin | quote }} }
+            - { name: OPENAI_GATEWAY_URL, value: {{ $.Values.backend.openaiGatewayUrl | quote }} }
             - { name: DATA_API_URL, value: {{ $.Values.backend.dataApiUrl | quote }} }
             {{- if $.Values.database.enabled }}
             - { name: PGHOST, value: {{ printf "%s-database" (include "otb.fullname" $) | quote }} }
