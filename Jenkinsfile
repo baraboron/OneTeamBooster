@@ -21,8 +21,9 @@ pipeline {
   stages {
     stage('Checkout main') {
       steps {
-        checkout scm
         script {
+          def revision = checkout scm
+          env.GIT_COMMIT = revision.GIT_COMMIT
           env.IMAGE_TAG = "${env.GIT_COMMIT.take(12)}-${env.BUILD_NUMBER}"
           currentBuild.description = "main ${env.GIT_COMMIT.take(12)}"
         }
