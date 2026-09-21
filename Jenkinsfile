@@ -34,8 +34,8 @@ pipeline {
       steps {
         sh 'bash deploy/ci/prepare.sh'
         sh 'node --test *.test.js'
-        sh 'node --test supabase/gateway.test.js'
         sh 'npm --prefix backend ci --ignore-scripts && npm --prefix backend test'
+        sh 'node --test supabase/gateway.test.js'
         sh 'node deploy/ci/wait-database.mjs && node --test backend/integration.test.js'
         sh '''
           tmp/ci/bin/helm lint deploy/helm/oneteambooster --strict -f deploy/values-preview.yaml -f deploy/values-ci.yaml
