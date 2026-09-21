@@ -252,9 +252,12 @@ input,textarea {width:100%;min-height:48px;padding:12px 16px;border:1px solid #a
 input::placeholder,textarea::placeholder {color:var(--muted);opacity:1}
 textarea {min-height:144px;resize:vertical}
 input[type=range] {accent-color:var(--blue);padding:0;cursor:pointer}
-.choice-group {display:flex;gap:8px}
-.choice-group button {min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--muted);font-size:.875rem;line-height:1.5}
-.choice-group button.selected {border-color:var(--blue);background:var(--sky);color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+.choice-group {display:flex;gap:var(--space-4)}
+.choice-group button {min-width:0;min-height:44px;padding:var(--space-3) var(--space-4);border:2px solid var(--line);border-radius:8px;background:#fff;color:var(--muted);font-size:.875rem;line-height:1.5;overflow-wrap:anywhere;word-break:keep-all}
+.choice-group button.selected {border-color:var(--blue);background:var(--sky);color:var(--blue)}
+#booster-form>label {margin:var(--space-6) 0 0}
+#booster-form>label:first-child {margin-top:0}
+#booster-form>label input,#booster-form>label select,.employee-directory label select {display:block;margin-top:var(--space-2)}
 .form-guide {margin:24px 0 0;padding:12px 16px;background:var(--subtle);border-radius:8px;color:var(--muted);font-size:.875rem;line-height:1.8}
 .recipient-source-field select,.employee-directory select {display:block;width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--muted);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);font-size:1rem}
 #test-user-panel select {width:100%;min-height:44px;border:1px solid var(--muted);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);padding:8px;font-size:.875rem}
@@ -270,7 +273,7 @@ input[type=range] {accent-color:var(--blue);padding:0;cursor:pointer}
 .employee-result[aria-pressed="true"] {border-color:var(--blue);background:var(--teal-bg)}
 .employee-selected:empty {display:none}
 .selection-field {margin-top:24px;padding-top:24px;border-top:1px solid var(--line)}
-.field-heading {display:flex;gap:12px;align-items:flex-start;margin-bottom:16px}
+.field-heading {display:flex;gap:var(--space-3);align-items:flex-start;margin-bottom:var(--space-6)}
 .field-heading>span {display:grid;place-items:center;width:32px;height:32px;flex-shrink:0;border-radius:8px;background:var(--navy);color:#fff;font-size:.75rem}
 .selection-field:has([data-name="mission"]) .field-heading>span {background:var(--teal)}
 .selection-field:has([data-name="boost"]) .field-heading>span {background:var(--violet)}
@@ -280,16 +283,19 @@ input[type=range] {accent-color:var(--blue);padding:0;cursor:pointer}
 .field-heading p {margin:4px 0 0;color:var(--muted);font-size:.75rem;line-height:1.7}
 .field-heading p b {font-weight:500;color:var(--blue)}
 .field-heading em {flex-shrink:0;padding:4px 8px;border-radius:6px;background:var(--sky);color:var(--blue);font-size:.75rem;font-style:normal}
-.choice-cards {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.choice-cards button {position:relative;min-height:88px;padding:12px;text-align:left;border-radius:var(--radius-sm)}
+.choice-cards {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-4)}
+.choice-cards button {display:flex;flex-direction:column;align-items:stretch;gap:var(--space-2);min-height:104px;padding:var(--space-4);text-align:left;border-radius:var(--radius-sm)}
 .choice-cards button b {display:block;color:var(--ink);font-size:.875rem;font-weight:600}
-.choice-cards button small {display:block;margin-top:6px;color:var(--muted);font-size:.75rem;line-height:1.6}
+.choice-cards button small {display:block;margin:0;color:var(--muted);font-size:.75rem;line-height:1.7}
 .choice-cards button.selected b {color:var(--blue)}
 .choice-cards button:hover {border-color:var(--blue)}
 .selection-columns {display:grid;grid-template-columns:1fr 1fr;gap:24px}
 .compact-cards {grid-template-columns:repeat(2,minmax(0,1fr))}
-.compact-cards button {padding-right:32px}
-.compact-cards button.selected:after {content:attr(data-rank);position:absolute;right:8px;top:12px;display:grid;place-items:center;width:20px;height:20px;border-radius:6px;background:var(--blue);color:#fff;font-size:.75rem;font-weight:600}
+.compact-cards button {display:grid;grid-template-columns:minmax(0,1fr) 24px;grid-template-rows:auto 1fr;align-content:start}
+.compact-cards button b {grid-column:1;grid-row:1;min-height:24px}
+.compact-cards button small {grid-column:1 / -1;grid-row:2}
+.compact-cards button:after {content:attr(data-rank);grid-column:2;grid-row:1;visibility:hidden;display:grid;place-items:center;width:24px;height:24px;border-radius:6px;background:var(--blue);color:#fff;font-size:.75rem;font-weight:600}
+.compact-cards button.selected:after {visibility:visible}
 .full {width:100%;margin-top:24px;min-height:48px}
 .message-preview {padding-top:24px;border-top:1px solid var(--line)}
 .message-preview>p {margin-top:0;color:var(--ink);font-size:1rem;font-weight:600}
@@ -396,6 +402,9 @@ input[type=range] {accent-color:var(--blue);padding:0;cursor:pointer}
  .booster-card {padding:20px}
  .card-bottom {align-items:flex-start}
  .message-preview>div {flex-wrap:wrap}
+}
+@media(max-width:360px) {
+ .choice-cards {grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce) {
  html {scroll-behavior:auto}
