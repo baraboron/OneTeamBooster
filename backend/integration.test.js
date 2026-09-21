@@ -23,6 +23,11 @@ test('PostgreSQL transactions, concurrency, persistence, HR sync and group scope
   assert.equal((await searchEmployees(pool,new URLSearchParams({q:'%_'}))).total,0);
   assert.equal((await searchEmployees(pool,new URLSearchParams({q:'가상',page:'2'}))).data.length,0);
   assert.equal((await listDepartments(pool)).count,2);
+  const departmentOnly=await searchEmployees(pool,new URLSearchParams({DEPT_CD:'test-dept-a'}),'test-0');
+  assert.equal(departmentOnly.total,3);assert.equal(departmentOnly.hasMore,false);
+  assert.ok(departmentOnly.data.every(row=>row.DEPT_CD==='test-dept-a'&&row.USER_ID!=='test-0'));
+  assert.equal((await searchEmployees(pool,new URLSearchParams({DEPT_CD:'test-dept-a',page:'2'}),'test-0')).data.length,0);
+  assert.equal((await searchEmployees(pool,new URLSearchParams({DEPT_CD:'unknown'}))).total,0);
   const input=recipientId=>({recipientId,projectName:'가상 검증 업무',partner:'동료',missions:['문서 작성','평가 및 분석'],boosts:['정보 공유','책임감(R&R)','동료 지지'],impacts:['품질 향상','팀워크 강화'],message:'테스트용 칭찬입니다.'});
   const campaign='test-campaign';
   const requestId=randomUUID();

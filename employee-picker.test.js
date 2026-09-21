@@ -38,3 +38,29 @@ test('names and department text are rendered as text, never HTML',async()=>{
  h.get('employee-query').value='test';h.search();await tick();
  const name=h.get('employee-results').children[0].children[0].children[0];assert.equal(name.textContent,'<img src=x onerror=alert(1)>');assert.equal(name.innerHTML,undefined);
 });
+
+test('department selection lists employees without a keyword and resets stale searches and recipients',async()=>{
+ const calls=[];let oldResolve;
+ const h=harness({employees:async(q,opts)=>{
+   calls.push({q,...opts});
+   if(opts.department==='old')return new Promise(resolve=>oldResolve=resolve);
+   return response([row(opts.department+'-'+opts.page)],opts.page,opts.page===1);
+ }});
+ h.search();await tick();assert.equal(calls.length,0,'No unfiltered company-wide browsing');
+ h.get('employee-query').value='old keyword';h.get('employee-department').value='old';
+ h.get('employee-department').listeners.change();
+ assert.equal(h.get('employee-query').value,'');
+ h.get('employee-department').value='new';h.get('employee-department').listeners.change();await tick();
+ oldResolve(response([row('stale')]));await tick();
+ assert.equal(h.get('employee-results').children.length,1);
+ h.get('employee-results').querySelectorAll()[0].listeners.click();assert.equal(h.picker.getSelected().USER_ID,'new-1');
+ h.get('employee-more').listeners.click();await tick();
+ assert.equal(calls.at(-1).q,'');assert.equal(calls.at(-1).department,'new');assert.equal(calls.at(-1).page,2);
+ assert.equal(h.get('employee-results').children.length,2);assert.equal(h.get('employee-more').hidden,true);
+ h.get('employee-query').value='동명';h.search();await tick();
+ assert.equal(calls.at(-1).q,'동명');assert.equal(calls.at(-1).department,'new');assert.equal(calls.at(-1).page,1);
+ assert.equal(h.picker.getSelected(),null);
+ const count=calls.length;h.get('employee-department').value='';h.get('employee-department').listeners.change();await tick();
+ assert.equal(calls.length,count);assert.equal(h.get('employee-results').children.length,0);
+ assert.equal(h.get('employee-results').attrs['aria-busy'],'false');h.picker.reset();
+});

@@ -22,7 +22,7 @@
 
 ## 2026-09-21 검색 확장
 
-`GET /api/employees?q=검색어&page=1&DEPT_CD=부서코드`는 이름·ID·부서·이메일·직책을 부분 검색한다. 검색어는 2~50자, 페이지당 20명이며 `%`, `_`는 일반 문자로 검색한다. 응답은 `data`, `count`, `total`, `page`, `pageSize`, `totalPages`, `hasMore`다. 직원의 대문자 원본 필드를 보존하며 `INSERT_DT`를 추가했다.
+`GET /api/employees?q=검색어&page=1&DEPT_CD=부서코드`는 이름·ID·부서·이메일·직책을 부분 검색한다. 검색어는 2~50자이며, `DEPT_CD`가 있으면 검색어 없이 해당 부서를 조회할 수 있다. 부서와 검색어가 모두 비어 있으면 조회하지 않는다. 페이지당 20명이며 `%`, `_`는 일반 문자로 검색한다. 응답은 `data`, `count`, `total`, `page`, `pageSize`, `totalPages`, `hasMore`다. 직원의 대문자 원본 필드를 보존하며 `INSERT_DT`를 추가했다.
 
 `GET /api/departments`는 `data: [{DEPT_CD, DEPT_NM, count}]`와 부서 수 `count`를 반환한다. 인증된 검색은 본인을 제외하며, 부서 필터와 이름/ID 순 정렬은 서버에서 처리한다.
 
@@ -49,7 +49,7 @@
 | API | 용도 |
 | --- | --- |
 | GET `/api/me` | 인증된 자신의 원래 HR 필드 |
-| GET `/api/employees?q=검색어` | 2~50자 검색, 최대 20명의 원래 HR 필드 반환 |
+| GET `/api/employees?q=검색어&DEPT_CD=부서코드` | 2~50자 검색 또는 부서만 선택하여 조회, 페이지당 20명의 원래 HR 필드 반환 |
 | GET `/api/workspace` | 자신의 수신함·발신함·포인트·발송 한도 |
 | POST `/api/boosters` | 칭찬과 양쪽 포인트 원장을 한 트랜잭션으로 저장 |
 | POST `/api/boosters/{id}/reply` | 자신의 수신 칭찬에 답장, 답장자 5P 한 번 지급 |

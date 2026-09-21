@@ -4,7 +4,7 @@ export async function searchEmployees(pool, params, excludeId = '') {
   const q = (params.get('q') || '').trim();
   const department = (params.get('DEPT_CD') || '').trim();
   const pageValue = params.get('page') || '1';
-  if (q.length < 2 || q.length > 50) throw new AppError(400, 'SEARCH_LENGTH', '검색어를 2~50자로 입력해 주세요.');
+  if ((!q && !department) || (q && (q.length < 2 || q.length > 50))) throw new AppError(400, 'SEARCH_LENGTH', '부서를 선택하거나 검색어를 2~50자로 입력해 주세요.');
   if (!/^[1-9]\d{0,3}$/.test(pageValue) || department.length > 100) throw new AppError(400, 'INVALID_SEARCH');
   const page = Number(pageValue), pageSize = 20;
   const pattern = '%' + q.replace(/[\\%_]/g, '\\$&') + '%';
@@ -12,7 +12,7 @@ export async function searchEmployees(pool, params, excludeId = '') {
   const { rows: [result] } = await pool.query(`WITH matches AS (
     SELECT user_id, profile FROM employees WHERE active AND user_id <> $1
       AND ($3 = '' OR profile->>'DEPT_CD' = $3)
-      AND (profile->>'USER_NM' ILIKE $2 OR profile->>'DEPT_NM' ILIKE $2
+      AND ($2 = '%%' OR profile->>'USER_NM' ILIKE $2 OR profile->>'DEPT_NM' ILIKE $2
         OR profile->>'USER_EMAIL' ILIKE $2 OR profile->>'ROLE_NM' ILIKE $2 OR user_id ILIKE $2)
   ), selected AS (
     SELECT * FROM matches ORDER BY profile->>'USER_NM', user_id LIMIT $4 OFFSET $5

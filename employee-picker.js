@@ -10,7 +10,7 @@
     let sequence=0,controller,timer,choice=null,page=0,rows=[],departmentsLoaded=false;
     function clearChoice(){choice=null;selected.textContent='';onChange(null);}
     function cancel(){sequence++;clearTimeout(timer);controller?.abort();}
-    function reset(){cancel();clearChoice();input.value='';department.value='';results.replaceChildren();results.setAttribute('aria-busy','false');rows=[];page=0;more.hidden=true;retry.hidden=true;status.textContent='이름·부서·이메일·직책을 2자 이상 입력해 주세요.';}
+    function reset(){cancel();clearChoice();input.value='';department.value='';results.replaceChildren();results.setAttribute('aria-busy','false');rows=[];page=0;more.hidden=true;retry.hidden=true;status.textContent='부서를 선택하거나 이름·이메일·직책을 2자 이상 입력해 주세요.';}
     function select(employee){
       choice=Object.freeze({...employee});
       selected.textContent=[employee.USER_NM,employee.DEPT_NM,employee.ROLE_NM,employee.USER_EMAIL].filter(Boolean).join(' · ');
@@ -31,8 +31,9 @@
     async function search(append=false){
       cancel();const current=sequence,query=input.value.trim();
       if(!append){clearChoice();rows=[];page=0;render();}
-      more.hidden=true;retry.hidden=true;
-      if(query.length<2||query.length>50){status.textContent='검색어를 2~50자로 입력해 주세요.';return;}
+      more.hidden=true;retry.hidden=true;results.setAttribute('aria-busy','false');
+      if(!query&&!department.value){status.textContent='부서를 선택하거나 검색어를 2~50자로 입력해 주세요.';return;}
+      if(query&&(query.length<2||query.length>50)){status.textContent='검색어를 2~50자로 입력해 주세요. 검색어를 지우면 선택한 부서 전체를 볼 수 있습니다.';return;}
       controller=new AbortController();status.textContent='임직원을 검색하고 있습니다.';results.setAttribute('aria-busy','true');
       try{
         const response=await api.employees(query,{page:page+1,department:department.value,signal:controller.signal});
@@ -50,7 +51,7 @@
     }
     input.addEventListener('input',()=>{cancel();clearChoice();rows=[];page=0;render();more.hidden=true;retry.hidden=true;results.setAttribute('aria-busy','false');status.textContent='검색어를 확인하고 있습니다.';timer=setTimeout(()=>search(),300);});
     input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();search();}});
-    department.addEventListener('change',()=>search());more.addEventListener('click',()=>search(true));
+    department.addEventListener('change',()=>{input.value='';search();});more.addEventListener('click',()=>search(true));
     async function open(){
       if(departmentsLoaded)return;
       try{const response=await api.departments();
