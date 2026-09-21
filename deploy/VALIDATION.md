@@ -1,3 +1,16 @@
+## 2026-09-21 11:35 KST Jenkins 자동 배포 · 최초 성공 리비전 5
+
+- GitHub main 연결 및 push 완료. Jenkins `OneTeamBooster-main` 빌드 #2가 **Started by an SCM change / SUCCESS**로 완료됐다. 검증 커밋 `9dbb3d004d51`, 이미지 태그 `9dbb3d004d51-2`. 수동 Build 호출은 최초 #1에만 사용했다.
+- Jenkins 임시 Pod에서 프런트엔드 32개·백엔드 12개·임시 PostgreSQL 통합 2개, 총 46개 통과. Helm lint 및 namespace 제한 계정의 클러스터 dry-run 통과.
+- Harbor에 프런트/백엔드 이미지를 TLS 검증을 유지하며 push하고 digest로 고정 배포했다. Helm atomic upgrade 리비전 5 성공, 두 Deployment 1/1 Ready. 실제 HTTP의 페이지, 두 사용자 workspace, HR 검색과 본인 제외, 미선택 401, testUserMode=true 및 productionReady=false를 확인했다. 실제 직원 칭찬/답장 쓰기는 하지 않았다.
+- 원격 `/home/admin/tmp/otb-ci-verify-20260921`에서도 `IMAGE_TAG=ci-verify-20260921 VALIDATE_CLUSTER=1 bash deploy/verify.sh`와 `deploy/verify-business.sh` 통과. 브라우저 검증은 앞선 리비전 4 기록과 구분하며 이번 CI 연결에서는 새로 수행하지 않았다.
+- `jenkins/otb-ci` 계정은 `oneteambooster-preview` Deployment 수정 가능, `wonix` Deployment 수정 불가를 확인했다. 호스트 Docker 소켓/privileged 권한 없이 빌드했다.
+- 최초 #1은 checkout 반환 커밋 변수를 연결하지 않아 실패했으며 배포 단계에 도달하지 않았다. 수정 후 SCM 자동 빌드 #2가 전체 단계를 통과했다.
+- 저장된 비밀값과 private-key 파일을 검사하고 75개 변경 파일에 포함되지 않음을 확인했다. NginX와 tmp는 Git에서 제외했다.
+- K3s 외부 TLS Secret 5개 갱신과 6개 서비스 도메인의 새 인증서·신뢰 체인 검증 완료. 제공 인증서 만료 2026-11-20 23:59:59 UTC. 상세 대상과 백업 위치는 CI.md 참고.
+
+이하 기록은 해당 시점의 이력이며 현재 상태는 위 Jenkins 결과와 deploy/README.md를 따른다.
+
 ## 2026-09-21 11:22 KST fetch 호출 오류 수정 · 리비전 4
 
 - 사용자 승인 후 프런트엔드만 `fetch-fix-20260921-v1`로 교체했다. Helm atomic upgrade 성공, 프런트엔드·백엔드 Deployment 1/1 Ready. 백엔드는 `test-users-20260921-v1` 유지.
@@ -71,15 +84,3 @@ Codex 브라우저에서 홈 화면, 시연 안내, 작성창, 프로젝트명 �
 ## 후속 과제
 
 사용자가 로그인 구현을 추후로 지정했다. 실제 사용자별 UI 서버 연동·SSO·CSRF·운영 그룹 매핑·실제 AI 생성은 아직 활성화되지 않았다. API 로직 검증과 인증된 실사용을 구분한다. 단일 노드 local-path DB이므로 정식 운영 전 백업/복구·고가용성 설계가 필요하다. Harbor 인증서 만료일은 2026-05-08 23:59:59 UTC이며 임의 갱신/검증 우회는 하지 않았다.
-## 2026-09-21 11:35 KST Jenkins 자동 배포 · 최초 성공 리비전 5
-
-- GitHub main 연결 및 push 완료. Jenkins `OneTeamBooster-main` 빌드 #2가 **Started by an SCM change / SUCCESS**로 완료됐다. 검증 커밋 `9dbb3d004d51`, 이미지 태그 `9dbb3d004d51-2`. 수동 Build 호출은 최초 #1에만 사용했다.
-- Jenkins 임시 Pod에서 프런트엔드 32개·백엔드 12개·임시 PostgreSQL 통합 2개, 총 46개 통과. Helm lint 및 namespace 제한 계정의 클러스터 dry-run 통과.
-- Harbor에 프런트/백엔드 이미지를 TLS 검증을 유지하며 push하고 digest로 고정 배포했다. Helm atomic upgrade 리비전 5 성공, 두 Deployment 1/1 Ready. 실제 HTTP의 페이지, 두 사용자 workspace, HR 검색과 본인 제외, 미선택 401, testUserMode=true 및 productionReady=false를 확인했다. 실제 직원 칭찬/답장 쓰기는 하지 않았다.
-- 원격 `/home/admin/tmp/otb-ci-verify-20260921`에서도 `IMAGE_TAG=ci-verify-20260921 VALIDATE_CLUSTER=1 bash deploy/verify.sh`와 `deploy/verify-business.sh` 통과. 브라우저 검증은 앞선 리비전 4 기록과 구분하며 이번 CI 연결에서는 새로 수행하지 않았다.
-- `jenkins/otb-ci` 계정은 `oneteambooster-preview` Deployment 수정 가능, `wonix` Deployment 수정 불가를 확인했다. 호스트 Docker 소켓/privileged 권한 없이 빌드했다.
-- 최초 #1은 checkout 반환 커밋 변수를 연결하지 않아 실패했으며 배포 단계에 도달하지 않았다. 수정 후 SCM 자동 빌드 #2가 전체 단계를 통과했다.
-- 저장된 비밀값과 private-key 파일을 검사하고 75개 변경 파일에 포함되지 않음을 확인했다. NginX와 tmp는 Git에서 제외했다.
-- K3s 외부 TLS Secret 5개 갱신과 6개 서비스 도메인의 새 인증서·신뢰 체인 검증 완료. 제공 인증서 만료 2026-11-20 23:59:59 UTC. 상세 대상과 백업 위치는 CI.md 참고.
-
-이하 기록은 해당 시점의 이력이며 현재 상태는 위 Jenkins 결과와 deploy/README.md를 따른다.
