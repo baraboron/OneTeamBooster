@@ -28,6 +28,15 @@ test('HTML IDs are unique and local resources exist',()=>{
  }
 });
 
+test('frontend image allowlist includes every local page asset',()=>{
+ const dockerfile=fs.readFileSync(path.join(__dirname,'deploy','frontend.Dockerfile'),'utf8');
+ for(const match of html.matchAll(/(?:src|href)="([^"]+)"/g)){
+   const url=match[1];
+   if(url.startsWith('#')||url.startsWith('assets/')||/^https?:/.test(url))continue;
+   assert.match(dockerfile,new RegExp('(?:^|\\s)'+url.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s|$)'),url+' is missing from the frontend image allowlist');
+ }
+});
+
 test('application static ID selectors retain their HTML targets',()=>{
  const ids=new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]));
  for(const match of app.matchAll(/\$\('#([\w-]+)'\)/g)){
