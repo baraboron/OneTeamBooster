@@ -30,10 +30,12 @@ test('HTML IDs are unique and local resources exist',()=>{
 
 test('frontend image allowlist includes every local page asset',()=>{
  const dockerfile=fs.readFileSync(path.join(__dirname,'deploy','frontend.Dockerfile'),'utf8');
+ const dockerignore=fs.readFileSync(path.join(__dirname,'.dockerignore'),'utf8');
  for(const match of html.matchAll(/(?:src|href)="([^"]+)"/g)){
    const url=match[1];
    if(url.startsWith('#')||url.startsWith('assets/')||/^https?:/.test(url))continue;
    assert.match(dockerfile,new RegExp('(?:^|\\s)'+url.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s|$)'),url+' is missing from the frontend image allowlist');
+   assert.match(dockerignore,new RegExp('^!'+url.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'$','m'),url+' is missing from the Docker build context allowlist');
  }
 });
 
