@@ -34,3 +34,9 @@ test('saving prevents user switches and duplicate clicks; confirmed writes reloa
  h.api.workspace=async()=>({...empty(),mode:'test',employee:users[0],points:30});resolve({id:'record'});await saving;
  assert.equal(h.data.at(-1).points,30);assert.equal(h.workspace.getState().busy,false);
 });
+test('administrator access follows only the server workspace permission',async t=>{
+ const h=harness({workspace:async()=>({...empty(),mode:'test',employee:users[0],permissions:{admin:true}})});t.after(()=>h.workspace.stop());
+ await h.workspace.init();await h.workspace.select('a');assert.equal(h.workspace.getState().isAdmin,true);
+ h.api.workspace=async()=>({...empty(),mode:'test',employee:users[0],permissions:{admin:false}});await h.workspace.refresh();
+ assert.equal(h.workspace.getState().isAdmin,false);
+});

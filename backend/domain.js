@@ -132,3 +132,45 @@ export async function leaderView(pool, userId, campaign, memberId, direction='re
       received: records.filter(record => record.recipient_id===row.user_id).length, sent: records.filter(record => record.sender_id===row.user_id).length })),
     records: records.filter(row => filterIds.includes(direction==='received'?row.recipient_id:row.sender_id)).map(presentRecord) };
 }
+
+export async function hasAdminAccess(pool, userId) {
+  const result = await pool.query('SELECT 1 FROM administrator_grants WHERE user_id=$1', [userId]);
+  return result.rowCount > 0;
+}
+
+export async function adminHistory(pool, userId, campaign, searchParams) {
+  if (!await hasAdminAccess(pool,userId)) throw new AppError(403,'ADMIN_FORBIDDEN','관리자 권한이 없습니다.');
+  const selectedUser = String(searchParams.get('userId') || '').trim();
+  const direction = String(searchParams.get('direction') || 'all');
+  const query = String(searchParams.get('q') || '').trim();
+  const page = Number(searchParams.get('page') || 1);
+  if (selectedUser.length > 100 || query.length > 50 || !['all','received','sent'].includes(direction) || !Number.isSafeInteger(page) || page < 1 || page > 10000) {
+    throw new AppError(400,'INVALID_ADMIN_FILTER','필터 조건을 확인해 주세요.');
+  }
+  if (direction !== 'all' && !selectedUser) throw new AppError(400,'ADMIN_USER_REQUIRED','받은/보낸 구분을 사용하려면 사용자를 선택해 주세요.');
+  if (selectedUser && !(await pool.query('SELECT 1 FROM employees WHERE active AND user_id=$1',[selectedUser])).rowCount) {
+    throw new AppError(400,'UNKNOWN_ADMIN_FILTER_USER','선택한 사용자를 확인해 주세요.');
+  }
+  const values=[campaign];
+  const conditions=['b.campaign=$1'];
+  if (selectedUser) {
+    values.push(selectedUser);
+    const parameter='$'+values.length;
+    conditions.push(direction==='received'?`b.recipient_id=${parameter}`:direction==='sent'?`b.sender_id=${parameter}`:`(b.sender_id=${parameter} OR b.recipient_id=${parameter})`);
+  }
+  if (query) {
+    values.push('%'+query.replaceAll('\\','\\\\').replaceAll('%','\\%').replaceAll('_','\\_')+'%');
+    const parameter='$'+values.length;
+    conditions.push(`(s.profile->>'USER_NM' ILIKE ${parameter} ESCAPE '\\' OR r.profile->>'USER_NM' ILIKE ${parameter} ESCAPE '\\' OR s.profile->>'DEPT_NM' ILIKE ${parameter} ESCAPE '\\' OR r.profile->>'DEPT_NM' ILIKE ${parameter} ESCAPE '\\' OR b.project_name ILIKE ${parameter} ESCAPE '\\' OR b.message ILIKE ${parameter} ESCAPE '\\')`);
+  }
+  const where=conditions.join(' AND ');
+  const {rows:[count]}=await pool.query(`SELECT count(*)::int AS total FROM boosters b JOIN employees s ON s.user_id=b.sender_id JOIN employees r ON r.user_id=b.recipient_id WHERE ${where}`,[...values]);
+  const recordValues=[...values,50,(page-1)*50];
+  const {rows}=await pool.query(`${joinedRecords} WHERE ${where} ORDER BY b.created_at DESC LIMIT $${recordValues.length-1} OFFSET $${recordValues.length}`,recordValues);
+  const {rows:employees}=await pool.query(`SELECT user_id,profile FROM employees WHERE active ORDER BY profile->>'USER_NM',profile->>'DEPT_NM',user_id`);
+  return {
+    total:count.total,page,totalPages:Math.ceil(count.total/50),
+    users:employees.map(row=>({USER_ID:row.user_id,USER_NM:row.profile.USER_NM,DEPT_NM:row.profile.DEPT_NM})),
+    records:rows.map(presentRecord)
+  };
+}

@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS leader_scopes (
   leader_id text NOT NULL REFERENCES employees(user_id), dept_cd text NOT NULL,
   PRIMARY KEY (leader_id, dept_cd)
 );
+CREATE TABLE IF NOT EXISTS administrator_grants (
+  user_id text PRIMARY KEY REFERENCES employees(user_id),
+  granted_at timestamptz NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS boosters (
   id uuid PRIMARY KEY, campaign text NOT NULL, sender_id text NOT NULL REFERENCES employees(user_id),
   recipient_id text NOT NULL REFERENCES employees(user_id), project_name text NOT NULL,

@@ -21,6 +21,7 @@
     send(values,requestId,csrfToken){return this.request('/boosters',{method:'POST',body:values,requestId,csrfToken});}
     reply(id,message,csrfToken){return this.request('/boosters/'+encodeURIComponent(id)+'/reply',{method:'POST',body:{message},csrfToken});}
     leader(memberId='',direction='received'){return this.request('/leader/records?memberId='+encodeURIComponent(memberId)+'&direction='+encodeURIComponent(direction));}
+    adminRecords({userId='',direction='all',q='',page=1}={}){return this.request('/admin/records?userId='+encodeURIComponent(userId)+'&direction='+encodeURIComponent(direction)+'&q='+encodeURIComponent(q)+'&page='+page);}
   }
   if(typeof module!=='undefined'&&module.exports)module.exports=OTBApiClient;
   else root.OTBApiClient=OTBApiClient;

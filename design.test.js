@@ -23,7 +23,7 @@ test('HTML IDs are unique and local resources exist',()=>{
    if(url.startsWith('#')||/^https?:/.test(url))continue;
    assert.ok(fs.existsSync(path.join(__dirname,url)),url);
  }
- for(const id of ['home','received','sent','insight','modal','report-modal','main-content','demo-role','recent-list','point-total','praise-briefing','score-strip']){
+ for(const id of ['home','received','sent','insight','admin','admin-filters','admin-records','modal','report-modal','main-content','demo-role','recent-list','point-total','praise-briefing','score-strip']){
    assert.ok(ids.includes(id),id);
  }
 });
@@ -85,6 +85,7 @@ test('design governance and truthful prototype labels remain linked',()=>{
  assert.match(html,/템플릿 기반 시연/);
  assert.match(html,/협업 분석/);
  assert.match(html,/상세 분석 보기/);
+ assert.match(html,/data-view="admin" hidden/);
  assert.doesNotMatch(html,/전사 포인트 TOP 10|leaderboard-/);
  assert.doesNotMatch(app,/(?<!\$)\$\('[^']+'\)\.forEach/);
  assert.match(html,/• 발송 한도: 1일 최대 3회 \/ 동일인 기준 주 1회<br>※ 동일인 발송 한도는 매주 월요일에 초기화됩니다\./);

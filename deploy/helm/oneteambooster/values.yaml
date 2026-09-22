@@ -28,6 +28,8 @@ backend:
   # Explicitly enable only for an approved internal directory preview.
   previewEmployeeSearch: false
   testUserMode: false
+  # Comma-separated names must be from the explicit test user list and resolve uniquely.
+  testAdminNames: ""
   previewOrigin: ""
   # Gateway URL is public configuration; its caller token belongs in existingSecret.
   openaiGatewayUrl: ""

@@ -1,4 +1,4 @@
-import { AppError, sendBooster, replyBooster, workspace, leaderboard, leaderView } from './domain.js';
+import { AppError, sendBooster, replyBooster, workspace, leaderboard, leaderView, hasAdminAccess, adminHistory } from './domain.js';
 import { searchEmployees, listDepartments } from './directory.js';
 import { testUsers, testIdentity } from './test-users.js';
 
@@ -45,20 +45,22 @@ export function createApplication({ pool, campaign = '2026-OneTeam', authorize, 
     const identity=testMode?await testIdentity(pool,req,previewOrigin):await authorize(req);
     const {rows:[actor]}=await pool.query('SELECT user_id,profile FROM employees WHERE user_id=$1 AND active',[identity.userId]);
     if(!actor)throw new AppError(403,'INACTIVE_EMPLOYEE');
+    const isAdmin=await hasAdminAccess(pool,actor.user_id);
     if(path==='/api/drafts' && req.method==='POST'){
       if(!draftGenerator?.enabled)throw new AppError(503,'AI_NOT_CONFIGURED','AI 초안 연결을 준비 중입니다.');
       return send(200,await draftGenerator.generate(actor.user_id,await readJson(req)));
     }
-    if(path==='/api/me' && req.method==='GET')return send(200,{employee:actor.profile});
+    if(path==='/api/me' && req.method==='GET')return send(200,{employee:actor.profile,permissions:{admin:isAdmin}});
     if (req.method === 'GET' && path === '/api/employees') {
       return send(200,await searchEmployees(pool,url.searchParams,actor.user_id));
     }
     if(req.method==='GET' && path==='/api/departments') return send(200,await listDepartments(pool));
-    if(req.method==='GET' && path==='/api/workspace') return send(200,{...await workspace(pool,actor.user_id,campaign),...(testMode?{mode:'test',employee:actor.profile}:{})});
+    if(req.method==='GET' && path==='/api/workspace') return send(200,{...await workspace(pool,actor.user_id,campaign),permissions:{admin:isAdmin},...(testMode?{mode:'test',employee:actor.profile}:{})});
     if(req.method==='GET' && path==='/api/leaderboard') {
       const result=await leaderboard(pool,campaign);
       return send(200,testMode?{...result,scope:'test',mode:'test',periodLabel:'테스트 포인트 누적'}:result);
     }
+    if(req.method==='GET' && path==='/api/admin/records') return send(200,await adminHistory(pool,actor.user_id,campaign,url.searchParams));
     if(testMode && path.startsWith('/api/leader/')) throw new AppError(403,'LEADER_FORBIDDEN','테스트 사용자에게 리더 권한을 부여하지 않았습니다.');
     if(req.method==='GET' && path==='/api/leader/records') return send(200,await leaderView(pool,actor.user_id,campaign,url.searchParams.get('memberId')||null,url.searchParams.get('direction')||'received'));
     if(req.method==='POST' && path==='/api/boosters') return send(201,await sendBooster(pool,actor.user_id,await readJson(req),req.headers['idempotency-key'],campaign));

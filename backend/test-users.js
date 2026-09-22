@@ -20,3 +20,15 @@ export async function testIdentity(pool,req,origin) {
   if (!users.some(row=>row.USER_ID===id)) throw new AppError(403,'TEST_USER_NOT_ALLOWED');
   return {userId:id};
 }
+
+export async function ensureTestAdministrators(pool,names=[]) {
+  if (!Array.isArray(names) || names.some(name=>!TEST_USER_NAMES.includes(name)) || new Set(names).size!==names.length) throw new Error('INVALID_TEST_ADMIN_CONFIGURATION');
+  if (!names.length) return {count:0};
+  const users=await testUsers(pool);
+  for (const name of names) {
+    const user=users.find(candidate=>candidate.USER_NM===name);
+    if(!user)throw new Error('TEST_ADMIN_NOT_FOUND');
+    await pool.query('INSERT INTO administrator_grants(user_id) VALUES($1) ON CONFLICT(user_id) DO NOTHING',[user.USER_ID]);
+  }
+  return {count:names.length};
+}

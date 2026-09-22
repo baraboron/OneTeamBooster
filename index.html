@@ -30,6 +30,8 @@
 <span aria-hidden="true"><svg class="nav-icon" viewBox="0 0 24 24"><path d="m21 3-7 18-4-7-7-4 18-7Z"/><path d="m10 14 5-5"/></svg></span> 보낸 부스터</button>
         <button class="nav-link" data-view="insight">
 <span aria-hidden="true"><svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></span> 리더 인사이트</button>
+        <button class="nav-link" data-view="admin" hidden>
+<span aria-hidden="true"><svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 3 4 6v5c0 5 3.4 8.5 8 10 4.6-1.5 8-5 8-10V6l-8-3Z"/><path d="M9 12h6M12 9v6"/></svg></span> 관리자 페이지</button>
       </nav>
       <section id="test-user-panel" hidden><label for="test-user">테스트 사용자 선택</label><select id="test-user"><option value="">사용자를 선택하세요</option></select><p id="test-user-status" role="status"></p><button id="test-user-refresh" type="button" class="secondary" hidden>다시 시도</button></section>
       <label class="demo-role-label" id="demo-role-label" for="demo-role">시제품 역할 전환</label><select id="demo-role"><option value="member">그룹원 · 김원익</option><option value="leader">리더 · 교육G (시연)</option></select>
@@ -127,6 +129,29 @@
 </div>
 </section>
       <section class="view" id="insight" aria-label="리더 인사이트"></section>
+      <section class="view" id="admin" aria-label="관리자 페이지">
+        <div class="section-heading admin-heading">
+          <p>ADMIN VIEW</p>
+          <h2>전체 칭찬 이력</h2>
+          <span>관리자 권한이 있는 사용자만 전체 사용자의 칭찬 기록을 조회할 수 있습니다.</span>
+        </div>
+        <section class="panel admin-panel">
+          <form id="admin-filters" class="admin-filters">
+            <label for="admin-user">사용자<select id="admin-user"><option value="">전체 사용자</option></select></label>
+            <label for="admin-direction">칭찬 구분<select id="admin-direction" disabled><option value="all">전체</option><option value="received">받은 칭찬</option><option value="sent">보낸 칭찬</option></select></label>
+            <label for="admin-query">검색<input id="admin-query" type="search" maxlength="50" placeholder="이름·부서·업무·내용"></label>
+            <button class="primary" type="submit">조회</button>
+          </form>
+          <div class="admin-result-heading"><p id="admin-result-count" role="status">기록을 불러오지 않았습니다.</p></div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>일시</th><th>보낸 사람</th><th>받은 사람</th><th>업무</th><th>선택 항목</th><th>칭찬 내용</th><th>답장</th></tr></thead>
+              <tbody id="admin-records"><tr><td colspan="7" class="empty">관리자 메뉴를 열면 기록을 불러옵니다.</td></tr></tbody>
+            </table>
+          </div>
+          <div class="admin-pagination"><button id="admin-prev" class="secondary" type="button" disabled>이전</button><span id="admin-page">1 / 1</span><button id="admin-next" class="secondary" type="button" disabled>다음</button></div>
+        </section>
+      </section>
     </main>
   </div>
   <div class="modal-backdrop" id="modal">
@@ -218,6 +243,7 @@
 <script src="api-client.js"></script>
 <script src="employee-picker.js"></script>
 <script src="test-workspace.js"></script>
+<script src="admin.js"></script>
 <script src="app.js"></script>
 <script src="ui.js"></script>
 </body>

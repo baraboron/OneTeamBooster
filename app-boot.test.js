@@ -18,7 +18,7 @@ function boot({fetchFn}={}){
  let generated=0;
  const context={console,URL,AbortController,setTimeout,clearTimeout,setInterval,clearInterval,fetch:fetchFn,crypto:require('node:crypto').webcrypto,location:{href:'http://localhost/',origin:'http://localhost'},document:{hidden:false,querySelector:node,querySelectorAll:()=>[],createElement:()=>node('#generated-'+generated++),getElementById:id=>node('#'+id),addEventListener(){}},localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)},addEventListener(){},scrollTo(){}};
  context.window=context;vm.createContext(context);
- for(const file of ['leader.js','motivation-templates.js','home-domain.js','home.js','praise-copy.js',...(fetchFn?['api-client.js','employee-picker.js','test-workspace.js']:[]),'app.js']){
+ for(const file of ['leader.js','motivation-templates.js','home-domain.js','home.js','praise-copy.js','admin.js',...(fetchFn?['api-client.js','employee-picker.js','test-workspace.js']:[]),'app.js']){
    vm.runInContext(fs.readFileSync(path.join(__dirname,file),'utf8'),context,{filename:file});
  }
  return {node,context,storage};
@@ -56,7 +56,7 @@ test('integrated test-user UI searches employees, submits to server and switches
      if(draftFailed)return {ok:false,status:503,json:async()=>({error:{code:'AI_UNAVAILABLE',message:'다시 시도해 주세요.'}})};
      body={source:'openai',message:'가상 업무에 필요한 정보를 공유해 주셔서 감사합니다.'};
    }
-   else if(path==='/api/workspace')body={mode:'test',employee:people.find(p=>p.USER_ID===id),points:sent?(id==='a'?10:20):0,remainingToday:sent?2:3,weeklyRecipientIds:[],received:[],sentBoosters:[]};
+   else if(path==='/api/workspace')body={mode:'test',employee:people.find(p=>p.USER_ID===id),permissions:{admin:id==='a'},points:sent?(id==='a'?10:20):0,remainingToday:sent?2:3,weeklyRecipientIds:[],received:[],sentBoosters:[]};
    else if(path==='/api/boosters'){observed={id,body:JSON.parse(options.body),key:options.headers['Idempotency-Key']};sent=true;body={id:'record'};}
    return {ok:true,json:async()=>body};
  }});
@@ -85,7 +85,9 @@ test('integrated test-user UI searches employees, submits to server and switches
  assert.equal(observed.id,'a');assert.equal(observed.body.recipientId,'b');assert.equal(observed.body.boosts.length,2);assert.equal(observed.body.recipientScope,'타팀');assert.match(observed.key,/^[\da-f-]{36}$/);
  assert.equal(observed.body.message,'검토하고 직접 고친 칭찬입니다.');
  assert.equal(h.node('#point-total').textContent,10);assert.equal(h.storage.size,0);
+ assert.equal(h.node('[data-view="admin"]').hidden,false);
  await h.node('#test-user').listeners.change({target:{value:'b'}});assert.equal(h.node('#current-user-name').textContent,'가상 B');assert.equal(h.node('#point-total').textContent,20);
+ assert.equal(h.node('[data-view="admin"]').hidden,true);
  assert.equal(h.node('#demo-role').hidden,true);assert.match(h.node('#analysis-scope').textContent,/테스트 기록.*0건/);assert.equal(rankingCalls,0);
  vm.runInContext('remoteWorkspace.stop()',h.context);
 });

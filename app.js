@@ -90,7 +90,7 @@ function render(){
  $('#received-list').innerHTML=received.map(receivedCard).join('');$('#sent-list').innerHTML=sent.length?sent.map(sentCard).join(''):'<p class="empty">보낸 부스터가 없습니다. 첫 칭찬을 전해보세요.</p>';
  renderReport();LeaderWorkspace.sync(data);HomeWorkspace.sync(data);
 }
-function showView(view){if(view==='insight'&&!LeaderWorkspace.isLeader()){toast('리더 전용 페이지입니다.');return;}$$('.view').forEach(element=>element.classList.toggle('active',element.id===view));$$('.nav-link').forEach(element=>element.classList.toggle('active',element.dataset.view===view));const title={home:'OneTeam(협업)에 대한 인정과 격려를 보냅니다',received:'나에게 온 칭찬',sent:'내가 보낸 칭찬',insight:'우리 그룹의 칭찬 현황'};$('#page-title').textContent=title[view];$('#eyebrow').textContent=view==='insight'?'LEADER VIEW · DEMO':'ONE TEAM BOOSTER';window.scrollTo({top:0,behavior:'smooth'});}
+function showView(view){if(view==='insight'&&!LeaderWorkspace.isLeader()){toast('리더 전용 페이지입니다.');return;}if(view==='admin'&&!AdminWorkspace.isAdmin()){toast('관리자 권한이 없습니다.');return;}$$('.view').forEach(element=>element.classList.toggle('active',element.id===view));$$('.nav-link').forEach(element=>element.classList.toggle('active',element.dataset.view===view));const title={home:'OneTeam(협업)에 대한 인정과 격려를 보냅니다',received:'나에게 온 칭찬',sent:'내가 보낸 칭찬',insight:'우리 그룹의 칭찬 현황',admin:'전체 사용자의 칭찬 이력'};$('#page-title').textContent=title[view];$('#eyebrow').textContent=view==='insight'?'LEADER VIEW · DEMO':view==='admin'?'ADMIN VIEW':'ONE TEAM BOOSTER';if(view==='admin')AdminWorkspace.open();window.scrollTo({top:0,behavior:'smooth'});}
 function updateSelectionCounter(group){group.querySelectorAll('button').forEach(button=>button.setAttribute('aria-pressed',String(button.classList.contains('selected'))));const name=group.dataset.name,count=group.querySelectorAll('.selected').length,counter=document.querySelector(`[data-counter="${name}"]`);if(!counter)return;if(group.dataset.mode==='multiple')counter.textContent=`${count} / 3`;if(group.dataset.mode==='rank')counter.textContent=count?`${count===1?'1순위':`${count}개 선택`}`:'선택하세요';}
 function normalizeRanks(group){[...group.querySelectorAll('.selected')].sort((a,b)=>(Number(a.dataset.rank)||0)-(Number(b.dataset.rank)||0)).forEach((button,index)=>button.dataset.rank=String(index+1));}
 function selectChoices(name,values){const group=$('[data-name="'+name+'"]');if(!group)return;[...group.children].forEach(button=>{const rank=values.indexOf(button.dataset.value||button.textContent.trim());button.classList.toggle('selected',rank>=0);if(group.dataset.mode==='rank'){if(rank>=0)button.dataset.rank=String(rank+1);else delete button.dataset.rank;}});normalizeRanks(group);updateSelectionCounter(group);}
@@ -119,6 +119,8 @@ function renderTestSession(state){
    $('#open-employee-search').disabled=!state.ready||state.busy;
    $('#send-booster').disabled=!state.ready||state.busy;
  }
+ AdminWorkspace.setAccess(state.enabled&&state.ready&&state.isAdmin);
+ if(!AdminWorkspace.isAdmin()&&$('#admin').classList.contains('active'))showView('home');
  render();
 }
 $('#test-user').addEventListener('change',async event=>{closeModal('modal');closeModal('reply-modal');showView('home');employeePicker?.reset();await remoteWorkspace.select(event.target.value);});
@@ -194,6 +196,7 @@ $('#sent-list').addEventListener('click',event=>{const item=data.sentBoosters.fi
 ['open-report','open-report-inline'].forEach(id=>$(`#${id}`).onclick=()=>$('#report-modal').classList.add('open'));
 HomeWorkspace.init({compose:openComposer,navigate:showView});
 LeaderWorkspace.init(data);
+AdminWorkspace.init(apiClient);
 window.addEventListener('storage',event=>{
  if(remoteWorkspace?.getState().enabled)return;
  if(event.key!==STORE||!event.newValue)return;
