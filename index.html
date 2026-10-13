@@ -9,7 +9,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body data-auth-state="pending">
+  <section id="auth-gate" class="auth-gate" aria-labelledby="auth-gate-title" aria-live="polite">
+    <img class="official-slogan" src="assets/dynamic-ips-global-oneteam.png" alt="Dynamic IPS Global OneTeam">
+    <h1 id="auth-gate-title">OneTeam Booster</h1>
+    <p id="auth-gate-status">사내 로그인을 확인하고 있습니다.</p>
+    <a id="sso-login" class="primary auth-login" href="/sso/authorize.do" hidden>사내 계정으로 로그인</a>
+    <button id="auth-retry" class="secondary" type="button" hidden>다시 확인</button>
+  </section>
   <a class="skip-link" href="#main-content">본문으로 바로가기</a>
   <div class="app-shell">
     <aside class="sidebar">
@@ -40,6 +47,7 @@
 <div>
 <b id="current-user-name">김원익</b>
 <small id="current-user-department">인사팀 교육G</small>
+<button id="sso-logout" class="text-button" type="button" hidden>로그아웃</button>
 </div>
 </div>
     </aside>
@@ -53,13 +61,17 @@
 <button class="secondary" id="open-employee-search">임직원 검색</button>
 <button class="secondary" id="open-report">협업 상세 분석</button>
 <button class="primary" id="open-composer">+ 부스터 보내기</button>
-<span class="send-limit" id="send-limit" aria-live="polite">오늘 3회 남음</span>
+<div class="send-limit-wrap" id="send-limit-wrap">
+<button type="button" class="send-limit" id="send-limit" aria-expanded="false" aria-controls="send-limit-rules" aria-describedby="send-limit-rules">오늘 3회 남음</button>
+<div class="send-limit-rules" id="send-limit-rules" role="tooltip" hidden>
+<b>운영 원칙</b>
+<ul><li>하루 최대 3회 발송</li><li>동일인에게 주 1회 발송</li><li>하루 한도: 매일 00:00 초기화</li><li>동일인 한도: 매주 월요일 00:00 초기화</li></ul>
+<p>오늘 초기화까지 <strong id="daily-reset-countdown"></strong></p>
+<p>월요일 초기화까지 <strong id="weekly-reset-countdown"></strong></p>
+<small>한국 시간 기준 · 익명 발송도 같은 한도가 적용됩니다.</small>
+</div></div>
 </div>
 </header>
-<div class="rule-bar">
-<b>운영 원칙</b>
-<span>• 발송 한도: 1일 최대 3회 / 동일인 기준 주 1회<br>※ 동일인 발송 한도는 매주 월요일에 초기화됩니다.</span>
-</div>
 <p id="test-mode-notice" class="form-guide" hidden>테스트 모드 · 실제 로그인 없이 사용자를 전환합니다. 인사정보는 실제 조회하며, 칭찬·답장·포인트는 테스트용으로만 저장됩니다.</p>
 <div class="demo-test-actions" id="local-demo-actions" aria-label="시연 기능">
 <span>시연 기능</span>
@@ -176,14 +188,15 @@
 </section>
 <p class="form-guide" id="draft-guide">함께한 업무와 고마웠던 점, 도움이 된 결과를 골라주세요. 초안을 확인하고 수정한 뒤 전송합니다. 현재는 템플릿 기반 시연입니다.</p>
 <div class="field selection-field partner-field"><div class="field-heading"><span>01</span><div><label>OneTeam Partner</label><p>메시지를 전달받을 상대방과의 관계</p></div></div><div class="choice-group choice-cards partner-cards" data-name="partner" data-mode="single"><button type="button" class="selected" data-value="동료"><b>동료</b><small>가장 표준적인 비즈니스 톤</small></button><button type="button" data-value="상사 / 선배"><b>상사 / 선배</b><small>예의를 갖춘 정중한 톤</small></button><button type="button" data-value="후배 / 신입"><b>후배 / 신입</b><small>격려와 따뜻함이 담긴 톤</small></button></div></div>
-<div class="field selection-field scope-field"><div class="field-heading"><div><label>소속 구분</label><p>받는 사람과의 팀/그룹 관계를 선택해 주세요.</p></div></div><div class="choice-group choice-cards" data-name="recipientScope" data-mode="single" role="group" aria-label="소속 구분"><button type="button" data-value="같은팀"><b>같은 팀/그룹</b><small>함께 일하는 동료에게 편안하고 따뜻한 존댓말</small></button><button type="button" data-value="타팀"><b>타 팀/그룹</b><small>부서 간 협업에 대한 정중하고 구체적인 감사</small></button></div><p class="helper">선택한 관계와 소속 구분에 맞춰 초안의 어투와 친밀도를 조절합니다. 상사·선배에게는 정중하게, 후배·신입에게는 존중하는 격려를 전합니다.</p></div>
 <div class="field selection-field"><div class="field-heading"><span>02</span><div><label>Mission Record</label><p>상대방과 함께한 협업 업무 <b>최대 3개 복수선택</b></p></div><em data-counter="mission">1 / 3</em></div><div class="choice-group choice-cards mission-cards" data-name="mission" data-mode="multiple"><button type="button" class="selected" data-value="문서 작성"><b>문서 작성</b><small>보고서·SOP·회의자료 작성 지원</small></button><button type="button" data-value="고객 대응"><b>고객 대응</b><small>VOC·긴급 요청에 선제 대응</small></button><button type="button" data-value="성능 개선"><b>성능 개선</b><small>연구·양산 설비 성능 개선</small></button><button type="button" data-value="설비 셋업"><b>설비 셋업</b><small>고객 Site·연구 Fab 셋업 인수</small></button><button type="button" data-value="평가 및 분석"><b>평가 및 분석</b><small>설비·공정 평가와 결과 분석</small></button><button type="button" data-value="프로세스 개선"><b>프로세스 개선</b><small>절차·설비 운영 표준 개선</small></button><button type="button" data-value="안전환경 점검"><b>안전환경 점검</b><small>규정 준수·안전 리스크 점검</small></button></div></div>
 <div class="selection-columns"><div class="field selection-field"><div class="field-heading"><span>03</span><div><label>Boost Point</label><p>보여준 핵심 협업 역량 <b>1~3순위 선택</b></p></div><em data-counter="boost">1순위</em></div><div class="choice-group choice-cards compact-cards" data-name="boost" data-mode="rank"><button type="button" class="selected" data-rank="1" data-value="정보 공유"><b>정보 공유</b><small>진행 상황과 리스크를 투명하게 공유</small></button><button type="button" data-value="적극적 경청"><b>적극적 경청</b><small>의견을 듣고 본질을 파악</small></button><button type="button" data-value="피드백 수용"><b>피드백 수용</b><small>건설적 비판을 성장의 자산으로</small></button><button type="button" data-value="책임감(R&amp;R)"><b>책임감(R&amp;R)</b><small>역할과 마감 기한을 준수</small></button><button type="button" data-value="유연성"><b>유연성</b><small>변경과 돌발 상황에 빠르게 적응</small></button><button type="button" data-value="공동 목표 의식"><b>공동 목표 의식</b><small>팀 전체의 이익을 우선</small></button><button type="button" data-value="동료 지지"><b>동료 지지</b><small>강점을 인정하고 사기를 북돋움</small></button></div></div><div class="field selection-field"><div class="field-heading"><span>04</span><div><label>OneTeam Impact</label><p>함께 만든 긍정적 변화 <b>1~3순위 선택</b></p></div><em data-counter="impact">1순위</em></div><div class="choice-group choice-cards compact-cards" data-name="impact" data-mode="rank"><button type="button" class="selected" data-rank="1" data-value="품질 향상"><b>품질 향상</b><small>다양한 시각으로 완성도 향상</small></button><button type="button" data-value="일정 단축"><b>일정 단축</b><small>빠른 피드백으로 작업 시간 단축</small></button><button type="button" data-value="리스크 방지"><b>리스크 방지</b><small>선제적 대처로 문제를 사전 차단</small></button><button type="button" data-value="비용 절감"><b>비용 절감</b><small>자원을 효율적으로 배분</small></button><button type="button" data-value="팀워크 강화"><b>팀워크 강화</b><small>신뢰가 깊어져 다음 협업 기대</small></button><button type="button" data-value="시야 확장"><b>시야 확장</b><small>넓은 관점으로 함께 학습</small></button><button type="button" data-value="동기 부여"><b>동기 부여</b><small>열정적인 모습이 자극이 됨</small></button></div></div></div>
 <p class="draft-status" id="draft-status" role="status" aria-live="polite" hidden></p>
+<div class="field"><label class="anonymous-option" for="anonymous-send"><input type="checkbox" id="anonymous-send" aria-describedby="anonymous-help">익명으로 보내기</label><p class="helper" id="anonymous-help">기본은 이름을 표시합니다. 선택하면 받는 사람에게 이름과 소속을 숨깁니다. 관리자 이력에는 발신자가 남으며, 본문에 적은 이름은 숨겨지지 않습니다.</p></div>
 <button class="primary full" type="submit" id="generate-draft">메시지 초안 만들기 <span>→</span></button>
 </form>
 <div class="message-preview hidden" id="message-preview">
 <p id="message-preview-note">보내기 전에 내용을 확인해주세요.</p>
+<p id="message-sender-mode" role="status"></p>
 <textarea id="message-text" aria-label="전송할 부스터 메시지">
 </textarea>
 <div>
@@ -244,6 +257,7 @@
 <script src="employee-picker.js"></script>
 <script src="test-workspace.js"></script>
 <script src="admin.js"></script>
+<script src="send-limit.js"></script>
 <script src="app.js"></script>
 <script src="ui.js"></script>
 </body>

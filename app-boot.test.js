@@ -16,7 +16,7 @@ function boot({fetchFn}={}){
    return nodes.get(key);
  }
  let generated=0;
- const context={console,URL,AbortController,setTimeout,clearTimeout,setInterval,clearInterval,fetch:fetchFn,crypto:require('node:crypto').webcrypto,location:{href:'http://localhost/',origin:'http://localhost'},document:{hidden:false,querySelector:node,querySelectorAll:()=>[],createElement:()=>node('#generated-'+generated++),getElementById:id=>node('#'+id),addEventListener(){}},localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)},addEventListener(){},scrollTo(){}};
+ const context={console,URL,AbortController,setTimeout,clearTimeout,setInterval,clearInterval,fetch:fetchFn,crypto:require('node:crypto').webcrypto,location:{href:'http://localhost/',origin:'http://localhost'},document:{body:node("body"),hidden:false,querySelector:node,querySelectorAll:()=>[],createElement:()=>node('#generated-'+generated++),getElementById:id=>node('#'+id),addEventListener(){}},localStorage:{getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)},addEventListener(){},scrollTo(){}};
  context.window=context;vm.createContext(context);
  for(const file of ['leader.js','motivation-templates.js','home-domain.js','home.js','praise-copy.js','admin.js',...(fetchFn?['api-client.js','employee-picker.js','test-workspace.js']:[]),'app.js']){
    vm.runInContext(fs.readFileSync(path.join(__dirname,file),'utf8'),context,{filename:file});
@@ -73,16 +73,15 @@ test('integrated test-user UI searches employees, submits to server and switches
  const selected={partner:['동료'],recipientScope:[],mission:['문서 작성'],boost:['정보 공유','동료 지지'],impact:['품질 향상']};
  h.context.document.querySelectorAll=selector=>{const key=selector.match(/data-name="(\w+)"/);return key?(selected[key[1]]||[]).map((value,i)=>({dataset:{value,rank:String(i+1)}})):[];};
  h.node('#project-name').value='가상 업무';await h.node('#booster-form').listeners.submit({preventDefault(){}});
- assert.equal(draftPayload,undefined);assert.match(h.node('#toast').textContent,/같은 팀\/그룹 또는 타 팀\/그룹/);
- selected.recipientScope=['타팀'];await h.node('#booster-form').listeners.submit({preventDefault(){}});
  assert.equal(h.node('#draft-status').hidden,false);assert.equal(h.node('#generate-draft').disabled,false);assert.equal(sent,false);
  assert.equal(h.node('#booster-form').classList.contains('hidden'),false,'Failed generation must not show a fake AI preview');
- draftFailed=false;await h.node('#booster-form').listeners.submit({preventDefault(){}});
- assert.deepEqual(Object.keys(draftPayload).sort(),['boosts','impacts','missions','partner','projectName','recipientScope']);
+ draftFailed=false;h.node('#anonymous-send').checked=true;await h.node('#booster-form').listeners.submit({preventDefault(){}});
+ assert.deepEqual(Object.keys(draftPayload).sort(),['boosts','impacts','missions','partner','projectName']);
  assert.match(h.node('#message-text').value,/가상 B님, 가상 업무/);assert.equal(sent,false,'Generating a draft must not send or award points');
+ assert.match(h.node('#message-sender-mode').textContent,/익명 발송/);
  h.node('#message-text').value='검토하고 직접 고친 칭찬입니다.';
  assert.equal(h.node('#send-booster').disabled,false);await h.node('#send-booster').onclick();
- assert.equal(observed.id,'a');assert.equal(observed.body.recipientId,'b');assert.equal(observed.body.boosts.length,2);assert.equal(observed.body.recipientScope,'타팀');assert.match(observed.key,/^[\da-f-]{36}$/);
+ assert.equal(observed.id,'a');assert.equal(observed.body.recipientId,'b');assert.equal(observed.body.boosts.length,2);assert.equal(observed.body.recipientScope,undefined);assert.equal(observed.body.isAnonymous,true);assert.match(observed.key,/^[\da-f-]{36}$/);
  assert.equal(observed.body.message,'검토하고 직접 고친 칭찬입니다.');
  assert.equal(h.node('#point-total').textContent,10);assert.equal(h.storage.size,0);
  assert.equal(h.node('[data-view="admin"]').hidden,false);
@@ -108,6 +107,27 @@ test('sending and replying refresh motivation without changing received analysis
  assert.equal(node('#praise-briefing').innerHTML,analysis);
 });
 
+test('new drafts default to named sends and anonymous received cards do not display sender details',async()=>{
+ const {node,context}=boot();
+ node('#anonymous-send').checked=true;node('#open-demo-composer').click();
+ assert.equal(node('#anonymous-send').checked,false);
+ context.document.querySelectorAll=selector=>{
+  const key=selector.match(/data-name="(\w+)"/);
+  const values={partner:['동료'],mission:['문서 작성'],boost:['정보 공유'],impact:['품질 향상']};
+  return key?(values[key[1]]||[]).map(value=>({dataset:{value}})):[];
+ };
+ node('#project-name').value='가상 업무';await node('#booster-form').listeners.submit({preventDefault(){}});
+ assert.equal(JSON.parse(node('#message-preview').dataset.values).isAnonymous,false);
+ assert.match(node('#message-sender-mode').textContent,/기명 발송/);
+ node('#back-to-form').click();node('#anonymous-send').checked=true;
+ await node('#booster-form').listeners.submit({preventDefault(){}});
+ assert.equal(JSON.parse(node('#message-preview').dataset.values).isAnonymous,true);
+ node('#back-to-form').click();assert.equal(node('#anonymous-send').checked,true);
+ vm.runInContext(`data.received=[{id:'anon',from:'익명',team:'',isAnonymous:true,message:'고맙습니다.',time:'방금 전'}];render();`,context);
+ assert.match(node('#recent-list').innerHTML,/익명으로 받은 칭찬/);
+ assert.doesNotMatch(node('#received-list').innerHTML,/소속 정보 없음/);
+});
+
 test('ordered selections survive save, reuse and summaries; employee drafts never enter local storage',()=>{
  const {node,context,storage}=boot();
  const scope=node('[data-name="recipientScope"]');scope.dataset.mode='single';scope.children=['같은팀','타팀'].map(value=>{const button=node('#scope-'+value);button.dataset.value=value;return button;});
@@ -121,7 +141,7 @@ test('ordered selections survive save, reuse and summaries; employee drafts neve
  assert.match(node('#sent-list').innerHTML,/정보 공유 → 동료 지지 → 유연성/);assert.match(node('#sent-list').innerHTML,/타 팀\/그룹/);
  node('#sent-list').listeners.click({target:{dataset:{reuse:item.id}}});
  assert.equal(node('[data-name="boost"]').children.find(b=>b.dataset.value==='유연성').dataset.rank,'3');
- assert.equal(scope.children.find(b=>b.dataset.value==='타팀').classList.contains('selected'),true);
+ assert.equal(node('#anonymous-send').checked,false,'Reuse starts as a named send');
  const counts=vm.runInContext('countBy(data.sentBoosters,"boost")',context);assert.equal(counts['유연성'],1);
  const before=storage.get('otb-prototype-v2');node('#message-preview').dataset.values=JSON.stringify({...values,directoryDraft:true});node('#send-booster').click();assert.equal(storage.get('otb-prototype-v2'),before);
  node('#open-employee-search').click();assert.equal(node('#recipient-source').value,'directory');assert.equal(node('#employee-directory').hidden,false);

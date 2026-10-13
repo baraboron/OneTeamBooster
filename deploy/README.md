@@ -1,6 +1,16 @@
-# 현재 시연 배포
+# 현재 SSO 접속 테스트 배포
 
-**접속 주소: http://192.168.20.72:30081** (사내망)
+**접속 주소: https://oneteam.ips.co.kr** (사내망, Ingress TLS)
+
+### SSO 및 공유 Redis · 2026-10-12 배포
+
+SSO 애플리케이션 코드는 `/home/admin/tmp/sso`에서 가져와 별도 `oneteam-auth` Helm release로 관리한다. 콜백은 `https://oneteam.ips.co.kr/sso/callback.do`; Redis StatefulSet은 `platform-auth`의 `redis-common` Service/PVC 한 개를 사용한다. SSO OAuth client secret 및 Redis 암호는 `oneteam-sso-runtime`, `redis-common-auth` Kubernetes Secret에만 둔다. 브라우저용 TLS는 기존 앱 Ingress에서 종료하고 `/sso/*`를 SSO Service로 전달한다. Redis는 SSO 전용 ACL/prefix와 NetworkPolicy를 사용한다.
+
+앱 backend는 `SSO_INTERNAL_URL`로 opaque 세션을 검증하고, `userID` claim을 HR `USER_ID`에 매핑한다. SSO cookie는 Secure/HttpOnly/SameSite=Lax이고, 업무 쓰기는 Origin 및 CSRF 검사를 통과해야 한다. `TEST_USER_MODE=false`이며 로그인한 사용자의 새 업무 기록과 답장·포인트는 운영 `public` 스키마에 기록된다. 기존 `otb_preview` 테스트 행은 자동으로 이동하지 않는다.
+
+클러스터는 frontend Ingress가 `oneteam.ips.co.kr/sso/*`를 SSO Service로, 나머지 경로를 frontend 앱으로 전달한다. 공용 Redis는 `platform-auth/redis-common` StatefulSet·PVC 2Gi이며 단일 replica로 HA 구성은 아니다. SSO와 앱 코드는 현재 원격 이미지/Helm에 수동 배포했다. GitHub main에는 아직 업로드하지 않았으므로 다음 main 빌드가 이 버전을 덮어쓸 수 있다.
+
+배포 후 확인: `oneteam-auth` release revision 1과 `otb` revision 20 deployed, Redis/SSO/frontend/backend Pod Ready. 실제 도메인 `/api/system`에서 `authentication=sso`, `testUserMode=false`; 비인증 `/api/me` 및 `/sso/auth/me`는 401. `/sso/authorize.do`는 사내 IdP로 302하며 등록 callback `https://oneteam.ips.co.kr/sso/callback.do` 및 Secure/HttpOnly state cookie를 확인했다. 실제 사용자 자격 증명으로 callback 완료와 부스터 저장은 아직 확인하지 않았다. 상세는 [VALIDATION.md](VALIDATION.md).
 
 2026-09-21 14:17 KST: **사내 앱 → Supabase 게이트웨이 → OpenAI 호출을 배포했다(Helm 리비전 11).** 실제 `/api/drafts`에서 한국어 초안 생성과 포인트·기록 불변을 확인했다. 브라우저에서도 생성·수정 화면을 확인했다. 상세 구성·검증·수동 배포 이력은 [OPENAI_GATEWAY.md](OPENAI_GATEWAY.md) 참고. 이후 사내 앱 업데이트는 main의 게이트웨이 설정을 사용해 Jenkins가 자동 배포한다.
 
@@ -29,6 +39,7 @@
 | 값 파일 | deploy/values-preview.yaml + deploy/values-ci.yaml |
 | 소스 / 빌드 | GitHub main / Jenkins 임시 Kubernetes agent |
 | 프런트엔드 | NodePort 30081 / 내부 8080 |
+| 사내 HTTPS | `https://oneteam.ips.co.kr` → `192.168.20.90` / Ingress NGINX |
 | 백엔드 | ClusterIP 3000, Node 24 + pg |
 | DB | PostgreSQL 17, local-path PVC 2Gi |
 | 앱 이미지 | wonix-ops.ips.co.kr/library/oneteambooster-{frontend,backend}:커밋12자리-빌드번호 |
@@ -36,7 +47,7 @@
 | HR 동기화 | 시작 시 + 매시간, 2026-09-21 전체 조회 1,501명 / 183부서 |
 | 사용자 선택 / UI 연동 | 지정된 두 테스트 사용자 선택, HR 검색 및 서버 테스트 기록 연동 |
 
-Harbor와 외부 Ingress TLS는 사용자 제공 인증서로 갱신했고 실제 신뢰 체인/호스트명 검증을 통과했다. 만료는 2026-11-20 23:59:59 UTC다. 현재 프리뷰는 단일 노드에 고정되어 있으며 HA 구성이 아니다. 운영 전 DB 백업·복구, SSO, 명시적 리더 부서 매핑이 필요하다.
+Harbor와 외부 Ingress TLS는 사용자 제공 인증서로 갱신했고 실제 신뢰 체인/호스트명 검증을 통과했다. `oneteam.ips.co.kr`은 사내 DNS에서 Ingress VIP `192.168.20.90`을 가리키며 `*.ips.co.kr` 인증서를 사용한다. 인증서 만료는 2026-11-20 23:59:59 UTC다. 현재 프리뷰는 단일 노드에 고정되어 있으며 HA 구성이 아니다. 운영 전 DB 백업·복구, SSO, 명시적 리더 부서 매핑이 필요하다.
 
 ## 비밀정보
 
@@ -45,6 +56,10 @@ Harbor와 외부 Ingress TLS는 사용자 제공 인증서로 갱신했고 실�
 - K3s에서는 전용 namespace의 `otb-runtime` Secret을 사용한다. frontend에는 전달하지 않는다.
 - 키/비밀번호/실제 직원 목록을 로그·문서·소스·컨테이너 이미지에 넣지 않는다. 배포용 일시 파일은 제거했다.
 - `deploy/Initialize-PreviewSecret.ps1`은 최초 생성 전용이다. 기존 Secret을 감지하면 중단한다. 비밀번호 변경은 별도 회전 절차로 진행한다.
+
+## 도메인 연결 · 2026-10-12
+
+사내 DNS `oneteam.ips.co.kr` → `192.168.20.90` 연결을 확인하고, Helm 리비전 19에서 Ingress와 HTTPS를 활성화했다. `ingress-nginx/global-tls-secret`의 wildcard 인증서를 `oneteambooster-preview/oneteambooster-tls`로 복제해 사용한다. 백엔드 허용 Origin도 `https://oneteam.ips.co.kr`로 전환했다. 배포 후 Ingress host, 두 앱 Pod readiness, 사내 HTTPS 200, 인증서 검증 결과 0, `/api/system`의 preview/test-user 상태를 확인했다.
 
 ## 상태 확인 (원격 Linux)
 

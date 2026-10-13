@@ -20,7 +20,7 @@ test('HTML IDs are unique and local resources exist',()=>{
  assert.equal(new Set(ids).size,ids.length);
  for(const match of html.matchAll(/(?:src|href)="([^"]+)"/g)){
    const url=match[1];
-   if(url.startsWith('#')||/^https?:/.test(url))continue;
+   if(url.startsWith('#')||url==='/sso/authorize.do'||/^https?:/.test(url))continue;
    assert.ok(fs.existsSync(path.join(__dirname,url)),url);
  }
  for(const id of ['home','received','sent','insight','admin','admin-filters','admin-records','modal','report-modal','main-content','demo-role','recent-list','point-total','praise-briefing','score-strip']){
@@ -33,7 +33,7 @@ test('frontend image allowlist includes every local page asset',()=>{
  const dockerignore=fs.readFileSync(path.join(__dirname,'.dockerignore'),'utf8');
  for(const match of html.matchAll(/(?:src|href)="([^"]+)"/g)){
    const url=match[1];
-   if(url.startsWith('#')||url.startsWith('assets/')||/^https?:/.test(url))continue;
+   if(url.startsWith('#')||url==='/sso/authorize.do'||url.startsWith('assets/')||/^https?:/.test(url))continue;
    assert.match(dockerfile,new RegExp('(?:^|\\s)'+url.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:\\s|$)'),url+' is missing from the frontend image allowlist');
    assert.match(dockerignore,new RegExp('^!'+url.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'$','m'),url+' is missing from the Docker build context allowlist');
  }
@@ -99,5 +99,7 @@ test('design governance and truthful prototype labels remain linked',()=>{
  assert.match(html,/data-view="admin" hidden/);
  assert.doesNotMatch(html,/전사 포인트 TOP 10|leaderboard-/);
  assert.doesNotMatch(app,/(?<!\$)\$\('[^']+'\)\.forEach/);
- assert.match(html,/• 발송 한도: 1일 최대 3회 \/ 동일인 기준 주 1회<br>※ 동일인 발송 한도는 매주 월요일에 초기화됩니다\./);
+ assert.match(html,/하루 최대 3회 발송/);assert.match(html,/동일인에게 주 1회 발송/);
+ assert.match(html,/매주 월요일 00:00 초기화/);assert.match(html,/id="daily-reset-countdown"/);
+ assert.doesNotMatch(html,/data-name="recipientScope"/);assert.match(html,/id="anonymous-send"/);
 });

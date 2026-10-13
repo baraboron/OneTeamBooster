@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { AppError } from './domain.js';
+import { createSsoAuthorizer } from './sso-client.js';
 
 const capabilities = Object.freeze({
   authentication: false,
@@ -44,11 +45,11 @@ export function createServer({ application } = {}) {
       }
       return respond(req, res, 200, {
         service: 'oneteambooster-api', version: '0.2.0', mode: application ? 'preview' : 'scaffold',
-        productionReady: false, capabilities:{...capabilities,aiGeneration:application?.aiGeneration===true},
+        productionReady: false, capabilities:{...capabilities,authentication:application?.authenticated===true,aiGeneration:application?.aiGeneration===true},
         implemented: { hrDirectory: true, boosterDelivery: true, replies: true, pointsLedger: true, leaderScope: true, companyLeaderboard: true, administratorHistory: true },
-        authentication: 'deferred', businessApiAccess: application?.testMode?'test-users-only':'disabled-until-authentication',
+        authentication: application?.authenticated?'sso':application?.testMode?'test-mode':'deferred', businessApiAccess:application?.authenticated?'authenticated-users':application?.testMode?'test-users-only':'disabled-until-authentication',
         testUserMode: application?.testMode===true,
-        employeeSearch: application?.testMode?'test-users':application?.previewEmployeeSearch ? 'preview-read-only' : 'requires-authentication'
+        employeeSearch: application?.authenticated?'authenticated-users':application?.testMode?'test-users':application?.previewEmployeeSearch ? 'preview-read-only' : 'requires-authentication'
       });
     }
 
@@ -91,7 +92,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       await database.migrate(pool,{testMode});
       const hr=createHrClient({apiKey:process.env.DATA_API_KEY,baseUrl:process.env.DATA_API_URL});
       await database.syncDirectory(pool,hr);
-      application=createApplication({pool,campaign:process.env.CAMPAIGN_ID || '2026-OneTeam',previewEmployeeSearch:process.env.PREVIEW_EMPLOYEE_SEARCH==='true',testMode,previewOrigin:process.env.PREVIEW_ORIGIN,draftGenerator:createDraftGenerator({apiKey:process.env.OPENAI_API_KEY,gatewayUrl:process.env.OPENAI_GATEWAY_URL,gatewayToken:process.env.OTB_GATEWAY_TOKEN,model:process.env.OPENAI_MODEL||'gpt-5.6-luna'})});
+      const authorize=process.env.SSO_INTERNAL_URL?createSsoAuthorizer():undefined;
+      application=createApplication({pool,campaign:process.env.CAMPAIGN_ID || '2026-OneTeam',authorize,previewEmployeeSearch:process.env.PREVIEW_EMPLOYEE_SEARCH==='true',testMode,previewOrigin:process.env.PREVIEW_ORIGIN,draftGenerator:createDraftGenerator({apiKey:process.env.OPENAI_API_KEY,gatewayUrl:process.env.OPENAI_GATEWAY_URL,gatewayToken:process.env.OTB_GATEWAY_TOKEN,model:process.env.OPENAI_MODEL||'gpt-5.6-luna'})});
       if(testMode) {
         const testUsersModule=await import('./test-users.js');
         await testUsersModule.testUsers(pool);
@@ -108,7 +110,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   }
   const server = createServer({application});
   server.listen(readPort(process.env.PORT), '0.0.0.0', () => {
-    console.log('OneTeamBooster listening; login deferred and business APIs protected.');
+    console.log(`OneTeamBooster listening; authentication=${application?.authenticated?'sso':'deferred'}.`);
   });
   let stopping = false;
   const shutdown = () => {

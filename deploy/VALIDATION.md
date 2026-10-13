@@ -1,3 +1,12 @@
+## 2026-10-12 SSO/공용 Redis 수동 배포
+
+- 소스는 원격 `/home/admin/tmp/sso`에서 가져왔고 `.env`는 이미지/전송 archive에 포함하지 않았다. SSO client secret은 `platform-auth/oneteam-sso-runtime`; 새 Redis 암호는 `platform-auth/redis-common-auth` Secret에 보관했다.
+- `platform-auth` Helm release `oneteam-auth` revision 1: SSO `oneteam-sso`와 Redis `redis-common` Ready. Redis PVC 2Gi local-path Bound, SSO 전용 ACL/key prefix와 NetworkPolicy 적용.
+- `oneteambooster-preview` Helm release `otb` revision 20: frontend/backend SSO digest 배포, `TEST_USER_MODE=false`, SSO internal URL 설정. PostgreSQL의 기존 `otb_preview` 자료는 유지되며 새 운영 기록은 `public` 스키마를 사용한다.
+- 사내 도메인 HTTP 확인: `/api/system`은 `authentication=sso`, `testUserMode=false`, `employeeSearch=authenticated-users`; 비인증 `/api/me` 401, `/sso/auth/me` 401; `/sso/authorize.do` 302 to `https://dws.wonik.com/sso/oidc/authorize`; `redirect_uri`는 등록된 `https://oneteam.ips.co.kr/sso/callback.do`; state cookie는 HttpOnly, Secure, SameSite=Lax, Path=/sso, Max-Age=300.
+- 실제 직원 계정으로 SSO callback 완료와 운영 부스터 저장은 사용자가 접속해 확인할 예정이며 이 배포 검증에서는 수행하지 않았다. 운영 `public`에 업무 테스트 기록을 생성하지 않았다.
+- 현재 변경은 GitHub main에 push하지 않았다. 이후 Jenkins main 배포는 SSO 통합 코드를 덮어쓸 수 있으므로, 운영을 이어가려면 로컬 변경을 검토 후 main에 업로드해야 한다.
+
 ## 2026-09-21 14:17 KST Supabase 게이트웨이 경유 · 리비전 11
 
 - 사용자 요청으로 사내 앱의 AI 호출을 `사내 /api/drafts → Supabase Edge Function → OpenAI`로 전환했다. 프런트·백엔드 태그 `gateway-20260921-141403`, Harbor 원격 검증 digest 고정, IfNotPresent 적용. 리비전 10에서 기능 배포, 리비전 11에서 오래된 Helm 안내 문구를 갱신했다.
@@ -94,3 +103,8 @@ Codex 브라우저에서 홈 화면, 시연 안내, 작성창, 프로젝트명 �
 ## 후속 과제
 
 사용자가 로그인 구현을 추후로 지정했다. 실제 사용자별 UI 서버 연동·SSO·CSRF·운영 그룹 매핑·실제 AI 생성은 아직 활성화되지 않았다. API 로직 검증과 인증된 실사용을 구분한다. 단일 노드 local-path DB이므로 정식 운영 전 백업/복구·고가용성 설계가 필요하다. Harbor 인증서 만료일은 2026-05-08 23:59:59 UTC이며 임의 갱신/검증 우회는 하지 않았다.
+- 2026-10-13 14:55 KST: Bitbucket `master`의 업로드 소스를 PR #1로 `main`에 통합했다. Jenkins `WonIX_SSO_Backend-main` #8 SUCCESS (`30214b8b41a`). 빌드 경로를 저장소 루트로 수정하고, 기존 Deployment get 권한으로 rollout 완료를 확인하도록 변경했다.
+- SSO `oneteam-sso-runtime`의 Redis 외부 주소/포트를 `redis-common.platform-auth.svc.cluster.local:6379`로 수정했다. 계정/비밀번호는 공용 Redis Secret과 일치함을 값 출력 없이 확인했으며 변경하지 않았다. Deployment desired/updated/ready/available replica 모두 1, `/healthz` 확인 통과. 도메인 `/sso/authorize.do`는 302, 미인증 `/sso/auth/me` 및 `/api/me`는 401. 실제 사용자 로그인 완료는 이번 확인에 포함하지 않았다.
+
+- 2026-10-13 15:28 KST: `SSO userID claim is required` 오류 수정. 원격 원본에서 사용하던 `userId`와 검증된 `sub`를 HR 단축 ID에 매핑하며, 식별자 누락·잘못된 subject·userinfo/introspection subject 불일치를 거절한다. 콜백의 RedirectResponse 생성 누락도 수정했다. Bitbucket PR #2를 `main`에 병합(`bb50e2ff39f`)하고 Webhook 자동 빌드 #10 SUCCESS 및 실제 배포 이미지에서 가상 인증 회귀 테스트 9개 통과를 확인했다. 실제 사용자 로그인 완료는 사용자 재시도로 확인해야 한다.
+- env 전체 덮어쓰기 후 Redis 계정/비밀번호 불일치로 readiness 503이 발생했던 건은 `deploy/sync-sso-env.py`로 복구했다. 원격 `/home/admin/tmp/sso/sync-sso-env.py`는 dotenv 값을 파싱·검증하고 공용 Redis 설정을 보존하여 Secret 갱신과 SSO rollout을 수행한다.

@@ -66,7 +66,14 @@ main {width:calc(100% - var(--sidebar-width));max-width:1592px;margin-left:var(-
 header {display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:24px}
 header p,.panel-title p,.score-card>p,.section-heading>p,.popup>p,.composer>p,.leader-kicker {margin:0 0 8px;color:var(--muted);font-size:.75rem;font-weight:600;letter-spacing:.1em}
 .header-actions {display:flex;align-items:center;gap:12px;flex-shrink:0}
-.send-limit {display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;border-radius:var(--radius-sm);background:var(--sky);color:var(--blue);font-size:.875rem;font-weight:600;white-space:nowrap}
+.send-limit {display:inline-flex;align-items:center;min-height:44px;padding:8px 12px;border-radius:var(--radius-sm);background:var(--sky);color:var(--blue);font-size:.875rem;font-weight:600;white-space:nowrap;border:1px solid var(--line);cursor:help}
+.send-limit-wrap {position:relative}
+.send-limit-rules {position:absolute;top:100%;right:0;z-index:30;width:min(340px,calc(100vw - 48px));padding:20px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface);box-shadow:0 12px 32px #142f5920;color:var(--ink);font-size:.875rem;line-height:1.7}
+.send-limit-rules[hidden] {display:none}
+.send-limit-rules ul {padding-left:20px;margin:12px 0}
+.send-limit-rules p {margin:8px 0;letter-spacing:normal;font-size:.875rem}
+.send-limit-rules strong {display:block;color:var(--blue);font-variant-numeric:tabular-nums}
+.send-limit-rules small {font-size:.75rem;color:var(--muted)}
 .primary,.secondary,.light-button,.reply {display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border:1px solid transparent;border-radius:var(--radius-sm);font-size:.875rem;font-weight:600;text-decoration:none;line-height:1.5}
 .primary {background:var(--navy);color:#fff}
 .primary:hover {background:var(--blue)}
@@ -266,6 +273,14 @@ input[type=range] {accent-color:var(--blue);padding:0;cursor:pointer}
 .recipient-source-field select,.employee-directory select {display:block;width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--muted);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);font-size:1rem}
 #test-user-panel select {width:100%;min-height:44px;border:1px solid var(--muted);border-radius:var(--radius-sm);background:var(--surface);color:var(--ink);padding:8px;font-size:.875rem}
 #test-user-panel p {font-size:.75rem;line-height:1.7;color:var(--muted);overflow-wrap:anywhere}
+.auth-gate {display:none;position:fixed;inset:0;z-index:1000;place-content:center;justify-items:center;gap:16px;padding:24px;background:var(--page);text-align:center}
+.auth-gate .official-slogan {width:min(280px,70vw);height:auto}
+.auth-gate h1 {margin:0;color:var(--navy);font-size:1.6rem}
+.auth-gate p {max-width:36rem;margin:0;color:var(--muted);line-height:1.7}
+.auth-login {display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 22px;border-radius:var(--radius-sm);text-decoration:none}
+#sso-logout {display:block;padding:4px 0;font-size:.75rem}
+body[data-auth-state="pending"] .app-shell,body[data-auth-state="signed-out"] .app-shell {display:none}
+body[data-auth-state="pending"] .auth-gate,body[data-auth-state="signed-out"] .auth-gate {display:grid}
 #test-mode-notice {margin:0 0 24px;background:var(--amber-bg);color:var(--amber)}
 .employee-directory {margin-top:16px;padding:16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--subtle)}
 .employee-directory p {font-size:.875rem;line-height:1.7;color:var(--muted)}
@@ -302,6 +317,8 @@ input[type=range] {accent-color:var(--blue);padding:0;cursor:pointer}
 .compact-cards button.selected:after {visibility:visible}
 .full {width:100%;margin-top:24px;min-height:48px}
 .message-preview {padding-top:24px;border-top:1px solid var(--line)}
+.anonymous-option {display:flex;align-items:center;gap:12px;min-height:44px;cursor:pointer}
+.anonymous-option input {width:20px;height:20px;min-height:20px;flex:0 0 20px;accent-color:var(--blue)}
 .draft-status {margin:var(--space-4) 0 0;color:var(--muted);font-size:.875rem;line-height:1.7}
 .message-preview>p {margin-top:0;color:var(--ink);font-size:1rem;font-weight:600}
 .message-preview textarea {min-height:240px;margin-bottom:16px}

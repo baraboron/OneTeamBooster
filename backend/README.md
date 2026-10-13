@@ -1,9 +1,16 @@
 # 인사 연동 및 업무 API
 
+## 2026-10-13 발신자 표시 및 작성 간소화 · 로컬 반영
+
+- 새 작성 UI는 관계만 선택하며 소속 구분을 요청하지 않는다. 기존 `recipientScope` 필드와 과거 기록의 표시는 호환성을 위해 유지한다.
+- `POST /api/boosters`는 선택적 boolean `isAnonymous`를 받는다. 기본은 기명이며 `true`만 익명으로 저장한다. 기존 기명 발송의 중복 방지 해시를 유지한다.
+- `boosters.is_anonymous`는 기본 `false`로 추가된다. 익명 수신 기록과 리더 기록의 `senderId`는 `null`, `from`은 `익명`, `team`은 빈 문자열이다. 발신자 본인의 보낸 칭찬과 명시적 관리자 이력에서는 발신자를 확인할 수 있다.
+- 실제 발신자 ID는 서버 원장에 유지하여 발송 제한·포인트·답장을 처리한다. 본문에 사용자가 적은 이름은 자동으로 지우지 않는다.
+
 ## 2026-09-21 소속 구분 및 어투 · 로컬 반영
 
 - `recipientScope`는 `같은팀` 또는 `타팀`이며 화면에는 같은 팀/그룹·타 팀/그룹으로 표시한다. 사용자가 선택하는 분류이며 인사정보에서 추정하지 않는다.
-- `/api/drafts`와 `/api/boosters`가 선택값을 검증하고, `boosters.recipient_scope`에 저장해 수신함·발신함·재사용에 전달한다. DB 컬럼은 nullable로 추가하며 기존 기록·요청의 중복 방지 해시는 유지한다. 기존 클라이언트의 미입력은 허용하지만 새 작성 UI에서는 선택이 필수다.
+- 당시 `/api/drafts`와 `/api/boosters`가 선택값을 검증하고 `boosters.recipient_scope`에 저장했다. 현재 새 작성에서는 입력받지 않으며, 기존 API의 선택적 필드는 유지한다.
 - 프롬프트 `praise-ko-v2`는 관계 3종 × 소속 2종의 어투·친밀도를 반영한다. 게이트웨이와 앱의 버전을 함께 배포해야 하며, 이번 변경은 아직 배포하지 않았다.
 
 ## 2026-09-21 AI 게이트웨이 연결
@@ -88,4 +95,4 @@ IMAGE_TAG=preview-20260918-v2 bash deploy/verify-business.sh
 
 권한이 있는 운영자만 컨테이너 안에서 `node scripts/admin.js sync-hr` 또는 `node scripts/admin.js leader-scopes USER_ID DEPT_CD...`를 실행한다. 부서 없이 후자를 호출하면 그 리더의 조회 범위를 제거한다. 실제 매핑은 사용자가 지정할 때만 등록한다.
 
-추후 인증 어댑터는 신뢰할 수 있는 서버 세션/SSO에서 `userId`를 확정하고, 비활성 계정·Origin·CSRF를 검증해야 한다. 그 전에는 배포 서버에 `authorize`를 주입하지 않는다. API 키는 직원 인증 수단으로 사용하지 않는다.
+배포 인증 어댑터는 내부 SSO 서비스의 opaque Redis 세션을 확인한 뒤 `userID` claim을 `userId`로 전달한다. 비활성 HR 계정, 요청 Origin, CSRF 토큰을 검증한다. SSO API 토큰은 브라우저에 전달하지 않는다. API 키는 직원 인증 수단으로 사용하지 않는다.

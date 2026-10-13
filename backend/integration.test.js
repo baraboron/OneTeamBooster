@@ -14,6 +14,7 @@ test('PostgreSQL transactions, concurrency, persistence, HR sync and group scope
   assert.equal(new URL(connectionString).pathname,'/otb_test','Only the disposable test database is allowed');
   const pool=createPool(connectionString);t.after(()=>pool.end());await migrate(pool);
   await pool.query('ALTER TABLE boosters DROP COLUMN recipient_scope');
+  await pool.query('ALTER TABLE boosters DROP COLUMN is_anonymous');
   await migrate(pool);await migrate(pool);
   const rows=Array.from({length:8},(_,i)=>({USER_ID:`test-${i}`,USER_NM:`가상 구성원 ${i}`,USER_EMAIL:`person${i}@example.invalid`,DEPT_CD:i<4?'test-dept-a':'test-dept-b',DEPT_NM:i<4?'가상 부서 A':'가상 부서 B',ROLE_CD:'',ROLE_NM:''}));
   await syncDirectory(pool,{all:async()=>rows});
@@ -35,6 +36,7 @@ test('PostgreSQL transactions, concurrency, persistence, HR sync and group scope
   assert.equal(first.id,retry.id);
   await migrate(pool);
   assert.equal((await workspace(pool,'test-1',campaign)).received[0].recipientScope,null,'Legacy records must not infer scope');
+  assert.equal((await workspace(pool,'test-1',campaign)).received[0].isAnonymous,false,'Legacy records remain named');
   assert.equal((await sendBooster(pool,'test-0',input('test-1'),requestId,campaign)).replayed,true);
   assert.equal((await workspace(pool,'test-0',campaign)).points,10);
   assert.equal((await workspace(pool,'test-1',campaign)).points,20);
@@ -65,6 +67,16 @@ test('PostgreSQL transactions, concurrency, persistence, HR sync and group scope
   assert.equal(ranking.scope,'company');assert.equal(ranking.mode,'live');
   assert.ok(ranking.leaders.every(row=>Number.isSafeInteger(row.points)));
   const secondPool=createPool(connectionString);try{assert.equal((await workspace(secondPool,'test-0',campaign)).points,30);}finally{await secondPool.end();}
+  const anonymousRequest=randomUUID();
+  const anonymous=await sendBooster(pool,'test-6',{...input('test-7'),isAnonymous:true},anonymousRequest,campaign);
+  const receivedAnonymous=(await workspace(pool,'test-7',campaign)).received[0];
+  assert.equal(receivedAnonymous.isAnonymous,true);assert.equal(receivedAnonymous.from,'익명');
+  assert.equal(receivedAnonymous.senderId,null);assert.equal(receivedAnonymous.team,'');
+  assert.equal((await workspace(pool,'test-6',campaign)).sentBoosters[0].isAnonymous,true);
+  await assert.rejects(sendBooster(pool,'test-6',input('test-7'),anonymousRequest,campaign),{code:'IDEMPOTENCY_CONFLICT'});
+  await replyBooster(pool,'test-7',anonymous.id,'익명 칭찬도 감사합니다.');
+  assert.equal((await workspace(pool,'test-7',campaign)).points,25);
+  assert.equal((await workspace(pool,'test-6',campaign)).sentBoosters[0].recipientReply,'익명 칭찬도 감사합니다.');
   await assert.rejects(syncDirectory(pool,{all:async()=>{throw new Error('upstream failed');}}));
   assert.equal((await pool.query('SELECT count(*)::int AS count FROM employees WHERE active')).rows[0].count,8);
   await syncDirectory(pool,{all:async()=>rows.slice(0,7)});

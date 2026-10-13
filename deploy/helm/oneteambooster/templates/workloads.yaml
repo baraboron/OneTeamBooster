@@ -58,9 +58,10 @@ spec:
             - { name: PORT, value: "3000" }
             - { name: CAMPAIGN_ID, value: {{ $.Values.backend.campaignId | quote }} }
             - { name: PREVIEW_EMPLOYEE_SEARCH, value: {{ $.Values.backend.previewEmployeeSearch | quote }} }
+            - { name: PREVIEW_ORIGIN, value: {{ $.Values.backend.previewOrigin | quote }} }
+            - { name: SSO_INTERNAL_URL, value: {{ $.Values.backend.ssoInternalUrl | quote }} }
             - { name: TEST_USER_MODE, value: {{ $.Values.backend.testUserMode | quote }} }
             - { name: TEST_ADMIN_NAMES, value: {{ $.Values.backend.testAdminNames | quote }} }
-            - { name: PREVIEW_ORIGIN, value: {{ $.Values.backend.previewOrigin | quote }} }
             - { name: OPENAI_GATEWAY_URL, value: {{ $.Values.backend.openaiGatewayUrl | quote }} }
             - { name: DATA_API_URL, value: {{ $.Values.backend.dataApiUrl | quote }} }
             {{- if $.Values.database.enabled }}

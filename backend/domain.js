@@ -35,6 +35,9 @@ export function validateBooster(input) {
   result.message = text(input.message,2000,'칭찬 내용');
   const recipientScope = validateRecipientScope(input.recipientScope);
   if (recipientScope !== undefined) result.recipientScope = recipientScope;
+  if (input.isAnonymous !== undefined && typeof input.isAnonymous !== 'boolean') throw new AppError(400,'INVALID_ANONYMITY','익명 발송 선택을 확인해 주세요.');
+  // Keep the existing hash for named sends, including older clients' retries.
+  if (input.isAnonymous === true) result.isAnonymous = true;
   return result;
 }
 
@@ -59,8 +62,8 @@ export async function sendBooster(pool, actorId, input, requestId, campaign) {
     if (limits.daily >= 3) throw new AppError(409,'DAILY_LIMIT','오늘은 부스터를 3회 모두 보냈어요.');
     if (limits.weekly) throw new AppError(409,'WEEKLY_LIMIT','같은 동료에게는 월요일 기준 주 1회만 보낼 수 있습니다.');
     const id = randomUUID();
-    await db.query(`INSERT INTO boosters(id,campaign,sender_id,recipient_id,project_name,partner,missions,boosts,impacts,message,request_id,request_hash,recipient_scope)
-      VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9::jsonb,$10,$11,$12,$13)`, [id,campaign,actorId,value.recipientId,value.projectName,value.partner,JSON.stringify(value.missions),JSON.stringify(value.boosts),JSON.stringify(value.impacts),value.message,requestId,hash,value.recipientScope??null]);
+    await db.query(`INSERT INTO boosters(id,campaign,sender_id,recipient_id,project_name,partner,missions,boosts,impacts,message,request_id,request_hash,recipient_scope,is_anonymous)
+      VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9::jsonb,$10,$11,$12,$13,$14)`, [id,campaign,actorId,value.recipientId,value.projectName,value.partner,JSON.stringify(value.missions),JSON.stringify(value.boosts),JSON.stringify(value.impacts),value.message,requestId,hash,value.recipientScope??null,value.isAnonymous===true]);
     await db.query(`INSERT INTO point_entries(campaign,user_id,booster_id,kind,points) VALUES($1,$2,$4,'send',10),($1,$3,$4,'receive',20)`, [campaign,actorId,value.recipientId,id]);
     return { id, replayed: false };
   });
@@ -84,10 +87,12 @@ export async function replyBooster(pool, actorId, boosterId, message) {
 
 const joinedRecords = `SELECT b.*,s.profile AS sender,r.profile AS recipient,reply.message AS reply_message,reply.created_at AS reply_at
   FROM boosters b JOIN employees s ON s.user_id=b.sender_id JOIN employees r ON r.user_id=b.recipient_id LEFT JOIN replies reply ON reply.booster_id=b.id`;
-export function presentRecord(row) {
+export function presentRecord(row, { revealSender = false } = {}) {
+  const isAnonymous = row.is_anonymous === true;
+  const hideSender = isAnonymous && !revealSender;
   return {
-    id: row.id, senderId: row.sender_id, recipientId: row.recipient_id,
-    from: row.sender.USER_NM, team: row.sender.DEPT_NM, recipient: row.recipient.USER_NM,
+    id: row.id, senderId: hideSender ? null : row.sender_id, recipientId: row.recipient_id, isAnonymous,
+    from: hideSender ? '익명' : row.sender.USER_NM, team: hideSender ? '' : row.sender.DEPT_NM, recipient: row.recipient.USER_NM,
     recipientTeam: row.recipient.DEPT_NM, projectName: row.project_name, partner: row.partner,
     recipientScope: row.recipient_scope ?? null,
     missions: row.missions, boosts: row.boosts, impacts: row.impacts,
@@ -104,7 +109,7 @@ export async function workspace(pool, userId, campaign) {
     COALESCE(array_agg(DISTINCT recipient_id) FILTER (WHERE created_at >= date_trunc('week',now() AT TIME ZONE 'Asia/Seoul') AT TIME ZONE 'Asia/Seoul'),'{}') AS weekly FROM boosters WHERE sender_id=$1`, [userId]);
   return {
     points: balance.points, received: records.rows.filter(row => row.recipient_id === userId).map(presentRecord),
-    sentBoosters: records.rows.filter(row => row.sender_id === userId).map(presentRecord),
+    sentBoosters: records.rows.filter(row => row.sender_id === userId).map(row => presentRecord(row, { revealSender: true })),
     remainingToday: Math.max(0,3-limits.daily), weeklyRecipientIds: limits.weekly
   };
 }
@@ -171,6 +176,6 @@ export async function adminHistory(pool, userId, campaign, searchParams) {
   return {
     total:count.total,page,totalPages:Math.ceil(count.total/50),
     users:employees.map(row=>({USER_ID:row.user_id,USER_NM:row.profile.USER_NM,DEPT_NM:row.profile.DEPT_NM})),
-    records:rows.map(presentRecord)
+    records:rows.map(row => presentRecord(row, { revealSender: true }))
   };
 }

@@ -8,9 +8,23 @@ async function json(path, headers) {
 }
 assert.equal((await response('/')).status, 200);
 const system = await json('/api/system');
-assert.equal(system.testUserMode, true); assert.equal(system.productionReady, false);
+assert.equal(system.productionReady, false);
 assert.equal(system.capabilities.aiGeneration, true);
 assert.equal((await response('/api/employees?q=test')).status, 401);
+const html=await (await response('/')).text();
+assert.ok(html.includes('id="anonymous-send"'));
+assert.ok(html.includes('id="daily-reset-countdown"'));
+assert.ok(!html.includes('data-name="recipientScope"'));
+assert.equal((await response('/send-limit.js')).status,200);
+if(system.capabilities.authentication===true){
+  assert.equal(system.authentication,'sso');assert.equal(system.testUserMode,false);
+  assert.equal((await response('/api/me')).status,401);
+  assert.equal((await response('/api/workspace',{'X-OTB-Test-User':'forged'})).status,401);
+  const login=await fetch(origin+'/sso/authorize.do',{redirect:'manual',signal:AbortSignal.timeout(15000)});
+  assert.equal(login.status,302);assert.ok(login.headers.get('location')?.startsWith('https://'));
+  console.log('PASS: HTTP app, anonymous-send assets, reset countdown, SSO configuration, login redirect and unauthenticated access restriction.');
+}else{
+assert.equal(system.testUserMode,true);
 const users = await json('/api/test-users');
 assert.equal(users.data.length, 2);
 const headers = {'X-OTB-Test-User': users.data[0].USER_ID};
@@ -35,3 +49,5 @@ for (const user of users.data) {
   assert.ok(employees.data.every(row => row.USER_ID !== user.USER_ID));
 }
 console.log('PASS: HTTP app, AI configuration, test-user mode, both workspaces, HR search and unauthenticated access restriction.');
+
+}

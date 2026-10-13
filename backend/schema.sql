@@ -26,6 +26,7 @@ CREATE INDEX IF NOT EXISTS boosters_sender_time ON boosters(sender_id, created_a
 -- Older records have no selected scope; do not infer it from current HR departments.
 ALTER TABLE boosters ADD COLUMN IF NOT EXISTS recipient_scope text
   CHECK (recipient_scope IN ('같은팀','타팀'));
+ALTER TABLE boosters ADD COLUMN IF NOT EXISTS is_anonymous boolean NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS boosters_recipient_time ON boosters(recipient_id, created_at);
 CREATE TABLE IF NOT EXISTS replies (
   booster_id uuid PRIMARY KEY REFERENCES boosters(id), message text NOT NULL,

@@ -1,11 +1,12 @@
 // Same-origin server requests only. The HR API key never reaches this client.
 (function(root){
   class OTBApiClient {
-    constructor(fetchFn=(...args)=>root.fetch(...args)){this.fetchFn=fetchFn;this.testUserId='';}
+    constructor(fetchFn=(...args)=>root.fetch(...args)){this.fetchFn=fetchFn;this.testUserId='';this.csrfToken='';}
     setTestUser(id){this.testUserId=id||'';}
+    setCsrfToken(token){this.csrfToken=token||'';}
     async request(path,{method='GET',body,requestId,csrfToken,signal}={}){
       const response=await this.fetchFn('/api'+path,{method,credentials:'same-origin',cache:'no-store',signal,
-        headers:{Accept:'application/json',...(this.testUserId?{'X-OTB-Test-User':this.testUserId}:{}),...(body?{'Content-Type':'application/json'}:{}),...(requestId?{'Idempotency-Key':requestId}:{}),...(csrfToken?{'X-CSRF-Token':csrfToken}:{})},
+        headers:{Accept:'application/json',...(this.testUserId?{'X-OTB-Test-User':this.testUserId}:{}),...(body?{'Content-Type':'application/json'}:{}),...(requestId?{'Idempotency-Key':requestId}:{}),...((csrfToken||this.csrfToken)?{'X-CSRF-Token':csrfToken||this.csrfToken}:{})},
         ...(body?{body:JSON.stringify(body)}:{})});
       const value=await response.json();
       if(!response.ok){const error=new Error(value.error?.message||'요청을 처리하지 못했습니다.');error.code=value.error?.code;error.status=response.status;throw error;}
@@ -14,6 +15,7 @@
     employees(query,{page=1,department='',signal}={}){return this.request('/employees?q='+encodeURIComponent(query)+'&page='+page+'&DEPT_CD='+encodeURIComponent(department),{signal});}
     departments(options){return this.request('/departments',options);}
     system(){return this.request('/system');}
+    me(){return this.request('/me');}
     testUsers(){return this.request('/test-users');}
     leaderboard(){return this.request('/leaderboard');}
     workspace(){return this.request('/workspace');}
